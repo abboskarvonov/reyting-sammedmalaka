@@ -1,0 +1,108 @@
+/* ── stats.css — Tailwind @apply only (plus raw CSS where @apply can't) ── */
+@reference "tailwindcss";
+
+[x-cloak] {
+    display: none !important;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #111827;
+}
+
+/* Card */
+.card {
+    @apply bg-white rounded-[14px] border border-slate-100;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+}
+
+/* Trend pills */
+.tp {
+    @apply inline-flex items-center gap-[3px] px-2 py-[2px] rounded-full text-[11px] font-semibold;
+}
+
+.tp-g {
+    @apply bg-green-100 text-green-600;
+}
+
+.tp-r {
+    @apply bg-red-100 text-red-600;
+}
+
+.tp-n {
+    @apply bg-slate-100 text-gray-500;
+}
+
+/* Score badge */
+.sb {
+    @apply inline-flex items-center justify-center rounded-lg text-xs font-bold px-[10px] py-[3px];
+}
+
+.sb-g {
+    @apply bg-green-100 text-green-600;
+}
+
+.sb-a {
+    @apply bg-yellow-100 text-yellow-600;
+}
+
+.sb-r {
+    @apply bg-red-100 text-red-600;
+}
+
+.sb-n {
+    @apply bg-slate-100 text-gray-400;
+}
+
+/* Chart wrapper */
+.cw {
+    @apply relative w-full;
+}
+
+/* Table row */
+.trow {
+    @apply border-b border-slate-50 transition-colors duration-100;
+}
+
+.trow:hover {
+    @apply bg-slate-50/80;
+}
+
+/* Task mini-bar track */
+.tb {
+    @apply h-1.5 rounded-full bg-slate-100 overflow-hidden min-w-14;
+}
+
+/* Task mini-bar fill */
+.tf {
+    @apply h-full rounded-full transition-[width] duration-500 ease-out;
+}
+
+/* List dividers */
+.ldiv {
+    @apply border-b border-gray-100;
+}
+
+/* Donut label */
+.dlabel {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none;
+}
+
+/* Responsive hide helpers — cannot use @apply for media queries */
+@media (max-width: 1023px) {
+    .hide-md {
+        display: none !important;
+    }
+}
+
+@media (max-width: 639px) {
+    .hide-sm {
+        display: none !important;
+    }
+}

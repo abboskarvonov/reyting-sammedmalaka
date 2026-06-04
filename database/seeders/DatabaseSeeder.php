@@ -2,24 +2,51 @@
 
 namespace Database\Seeders;
 
+use App\Models\RatingQuestion;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // 1. Admin foydalanuvchi
+        User::updateOrCreate(
+            ['email' => 'admin@staff-rating.com'],
+            [
+                'name'      => 'Super Admin',
+                'password'  => bcrypt('password'),
+                'role'      => 'admin',
+                'is_active' => true,
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // 2. Baholash savollari
+        $questions = [
+            ["O'qituvchi mavzuni tushunarli va aniq tushuntira oladimi?",    1],
+            ["O'qituvchi darsga yaxshi tayyorgarlik ko'rganmi?",             2],
+            ["O'qituvchi tinglovchilarga hurmat bilan muomala qiladimi?",     3],
+            ["Dars qiziqarli va interaktiv tarzda o'tildimi?",               4],
+            ["O'qituvchi savollaringizga aniq va to'liq javob bera oladimi?", 5],
+        ];
+
+        foreach ($questions as [$question, $order]) {
+            RatingQuestion::updateOrCreate(
+                ['question' => $question],
+                ['max_score' => 5, 'order' => $order, 'is_active' => true]
+            );
+        }
+
+        // 3. Asosiy ma'lumotlar
+        $this->call([
+            GroupSeeder::class,
+            SubjectSeeder::class,
+            TeacherSeeder::class,
+            StudentSeeder::class,
+            GroupSubjectTeacherSeeder::class,
+            TaskSeeder::class,
+            AttendanceSeeder::class,
+            RatingSeeder::class,
         ]);
     }
 }

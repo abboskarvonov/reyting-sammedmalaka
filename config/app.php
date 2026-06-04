@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    'academic_year' => env('ACADEMIC_YEAR', '2024-2025'),
+    'semester'      => env('SEMESTER', '1'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
