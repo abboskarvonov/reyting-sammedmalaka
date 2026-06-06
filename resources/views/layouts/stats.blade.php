@@ -5,76 +5,147 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Statistika paneli — SMK Samarqand')</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/css/stats.css', 'resources/js/stats.js', 'resources/js/app.js'])
 </head>
 
-<body class="bg-slate-50 min-h-screen flex flex-col">
+<body class="min-h-screen" x-data="{ open: true }" style="background:#f8f9ff;color:#0b1c30;-webkit-font-smoothing:antialiased">
 
-    {{-- ═══════ NAV ═══════ --}}
-    <nav class="sticky top-0 z-50 bg-white border-b border-slate-100" style="box-shadow:0 2px 8px rgba(15,23,42,.08)">
-        <div class="px-8 h-20 flex items-center justify-between gap-4">
-            {{-- Logo (link to home) --}}
-            <a href="{{ route('public.stats') }}" class="flex items-center gap-3 shrink-0 no-underline">
-                <div class="w-12 h-12 rounded-[12px] flex items-center justify-center shrink-0"
-                    style="background:linear-gradient(135deg,#1E3A5F,#3B82F6)">
-                    <svg viewBox="0 0 16 16" class="w-5 h-5 fill-white">
-                        <rect x="6" y="0" width="4" height="16" rx="1" />
-                        <rect x="0" y="6" width="16" height="4" rx="1" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-[16px] font-bold text-gray-900 leading-tight m-0">SMK Samarqand</p>
-                    <p class="text-[11px] text-gray-400 leading-tight m-0 mt-0.5">Xodimlarni baholash tizimi</p>
-                </div>
-            </a>
-            {{-- Center nav --}}
-            <div class="flex items-center gap-1">
-                @php $navBase = 'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold no-underline transition-colors'; @endphp
-                <a href="{{ route('public.ratings') }}"
-                    class="{{ $navBase }} {{ request()->routeIs('public.ratings') ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50' }}">
-                    <i class="fas fa-star text-[11px]"></i>O'qituvchi reytingi
-                </a>
-                <a href="{{ route('public.attendance') }}"
-                    class="{{ $navBase }} {{ request()->routeIs('public.attendance') ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50' }}">
-                    <i class="fas fa-calendar-check text-[11px]"></i>Davomat
-                </a>
-                <a href="{{ route('public.tasks') }}"
-                    class="{{ $navBase }} {{ request()->routeIs('public.tasks') ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50' }}">
-                    <i class="fas fa-clipboard-check text-[11px]"></i>Topshiriqlar
-                </a>
+    {{-- ═══════ SIDEBAR ═══════ --}}
+    <aside :style="{width: open ? '256px' : '64px'}"
+           style="background:#eff4ff;transition:width .25s ease"
+           class="h-screen fixed left-0 top-0 flex flex-col py-8 z-50 shadow-sm overflow-hidden">
+
+        {{-- Logo --}}
+        <div class="mb-8 flex items-center gap-3 overflow-hidden"
+             :class="open ? 'px-6' : 'px-0 justify-center'">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background:#004ac6">
+                <span class="material-symbols-outlined text-white" style="font-size:18px">school</span>
             </div>
-            {{-- Login button --}}
-            <div class="flex items-center gap-2.5 shrink-0">
-                <a href="{{ route('student.login') }}"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 text-white text-[13px] font-semibold rounded-[10px] no-underline transition-opacity hover:opacity-90"
-                    style="background:linear-gradient(135deg,#1E3A5F,#2563EB)">
-                    <i class="fas fa-right-to-bracket text-[12px]"></i>Tinglovchi kirishi
-                </a>
+            <div class="overflow-hidden" x-show="open">
+                <h1 class="text-base font-bold leading-tight m-0 whitespace-nowrap" style="font-family:'Hanken Grotesk',sans-serif;color:#004ac6">SMK Samarqand</h1>
+                <p class="text-[11px] m-0 mt-0.5 whitespace-nowrap" style="color:#434655;opacity:.7">Statistika portali</p>
             </div>
         </div>
-    </nav>
 
-    {{-- ═══════ PAGE HEADER (optional) ═══════ --}}
-    @yield('page-header')
+        {{-- Navigation --}}
+        <nav class="flex-1 px-2 space-y-0.5">
 
-    {{-- ═══════ MAIN ═══════ --}}
-    <main class="flex-1 px-8 py-6 pb-14">
-        @yield('content')
-    </main>
+            <a href="{{ route('public.stats') }}"
+               :class="open ? 'gap-3 px-3' : 'justify-center px-0'"
+               :title="open ? '' : 'Dashboard'"
+               class="flex items-center py-2.5 rounded-lg transition-colors text-sm no-underline overflow-hidden {{ request()->routeIs('public.stats') ? 'font-bold' : '' }}"
+               style="{{ request()->routeIs('public.stats') ? 'color:#004ac6;background:rgba(0,74,198,.1)' : 'color:#434655' }}"
+               @unless(request()->routeIs('public.stats'))
+               onmouseover="this.style.background='#dce9ff'" onmouseout="this.style.background=''"
+               @endunless>
+                <span class="material-symbols-outlined shrink-0" style="font-size:22px">dashboard</span>
+                <span x-show="open" class="whitespace-nowrap">Dashboard</span>
+            </a>
 
-    {{-- ═══════ FOOTER ═══════ --}}
-    <footer class="bg-gray-900 text-white/40 py-6 text-center">
-        <p class="text-[13px] font-semibold text-white/85 m-0 mb-1">
-            Respublika o`rta tibbiyot va farmaseft xodimlar malakasini oshirish va ularni ixtisoslashtirish markazi
-            Samarqand filiali baholash tizimi statistikasi
-        </p>
-        <p class="text-[11px] m-0">© {{ date('Y') }} · Barcha huquqlar himoyalangan</p>
-    </footer>
+            <a href="{{ route('public.ratings') }}"
+               :class="open ? 'gap-3 px-3' : 'justify-center px-0'"
+               :title="open ? '' : 'O\'qituvchilar'"
+               class="flex items-center py-2.5 rounded-lg transition-colors text-sm no-underline overflow-hidden {{ request()->routeIs('public.ratings') ? 'font-bold' : '' }}"
+               style="{{ request()->routeIs('public.ratings') ? 'color:#004ac6;background:rgba(0,74,198,.1)' : 'color:#434655' }}"
+               @unless(request()->routeIs('public.ratings'))
+               onmouseover="this.style.background='#dce9ff'" onmouseout="this.style.background=''"
+               @endunless>
+                <span class="material-symbols-outlined shrink-0" style="font-size:22px">groups</span>
+                <span x-show="open" class="whitespace-nowrap">O'qituvchilar</span>
+            </a>
 
-    {{-- ═══════ INJECTED DATA & SCRIPTS ═══════ --}}
+            <a href="{{ route('public.attendance') }}"
+               :class="open ? 'gap-3 px-3' : 'justify-center px-0'"
+               :title="open ? '' : 'Davomat'"
+               class="flex items-center py-2.5 rounded-lg transition-colors text-sm no-underline overflow-hidden {{ request()->routeIs('public.attendance') ? 'font-bold' : '' }}"
+               style="{{ request()->routeIs('public.attendance') ? 'color:#004ac6;background:rgba(0,74,198,.1)' : 'color:#434655' }}"
+               @unless(request()->routeIs('public.attendance'))
+               onmouseover="this.style.background='#dce9ff'" onmouseout="this.style.background=''"
+               @endunless>
+                <span class="material-symbols-outlined shrink-0" style="font-size:22px">calendar_today</span>
+                <span x-show="open" class="whitespace-nowrap">Davomat</span>
+            </a>
+
+            <a href="{{ route('public.tasks') }}"
+               :class="open ? 'gap-3 px-3' : 'justify-center px-0'"
+               :title="open ? '' : 'Topshiriqlar'"
+               class="flex items-center py-2.5 rounded-lg transition-colors text-sm no-underline overflow-hidden {{ request()->routeIs('public.tasks') ? 'font-bold' : '' }}"
+               style="{{ request()->routeIs('public.tasks') ? 'color:#004ac6;background:rgba(0,74,198,.1)' : 'color:#434655' }}"
+               @unless(request()->routeIs('public.tasks'))
+               onmouseover="this.style.background='#dce9ff'" onmouseout="this.style.background=''"
+               @endunless>
+                <span class="material-symbols-outlined shrink-0" style="font-size:22px">assignment</span>
+                <span x-show="open" class="whitespace-nowrap">Topshiriqlar</span>
+            </a>
+
+        </nav>
+
+        {{-- Student login --}}
+        <div class="mt-auto pt-6" :class="open ? 'px-3' : 'px-2'" style="border-top:1px solid rgba(195,198,215,.35)">
+            <a href="{{ route('student.login') }}"
+               :class="open ? 'gap-3 px-3' : 'justify-center px-0'"
+               :title="open ? '' : 'Tinglovchi kirishi'"
+               class="flex items-center py-3 rounded-lg no-underline transition-colors"
+               onmouseover="this.style.background='#dce9ff'" onmouseout="this.style.background=''">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:#dce9ff">
+                    <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">account_circle</span>
+                </div>
+                <div class="min-w-0 overflow-hidden" x-show="open">
+                    <p class="text-xs font-bold m-0 leading-tight whitespace-nowrap" style="color:#0b1c30">Tinglovchi kirishi</p>
+                    <p class="text-[10px] m-0 mt-0.5 whitespace-nowrap" style="color:#434655">ID-kod bilan</p>
+                </div>
+            </a>
+        </div>
+
+    </aside>
+
+    {{-- ═══════ MAIN WRAPPER ═══════ --}}
+    <div :style="{marginLeft: open ? '256px' : '64px'}"
+         style="transition:margin-left .25s ease"
+         class="flex flex-col min-h-screen">
+
+        {{-- ═══════ HEADER ═══════ --}}
+        <header class="flex justify-between items-center h-16 px-6 sticky top-0 z-40 shadow-sm" style="background:#f8f9ff">
+
+            {{-- Sidebar toggle --}}
+            <button @click="open = !open"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center border-0 cursor-pointer"
+                    style="background:#eff4ff;color:#004ac6"
+                    onmouseover="this.style.background='#dce9ff'" onmouseout="this.style.background='#eff4ff'">
+                <span class="material-symbols-outlined" style="font-size:20px" x-text="open ? 'menu_open' : 'menu'"></span>
+            </button>
+
+            {{-- Right side info --}}
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full" style="background:rgba(0,108,73,.1)">
+                    <span class="w-2 h-2 rounded-full animate-pulse inline-block" style="background:#006c49"></span>
+                    <span class="text-[11px] font-semibold" style="color:#006c49">Jonli ma'lumot</span>
+                </div>
+            </div>
+
+        </header>
+
+        {{-- ═══════ MAIN CONTENT ═══════ --}}
+        <main class="flex-1 px-8 py-6 pb-16">
+            @yield('content')
+        </main>
+
+        {{-- ═══════ FOOTER ═══════ --}}
+        <footer class="py-6 text-center" style="background:#0b1c30;border-top:2px solid #004ac6">
+            <div class="flex items-center justify-center gap-2.5 mb-2">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:#004ac6">
+                    <span class="material-symbols-outlined text-white" style="font-size:14px">school</span>
+                </div>
+                <p class="text-[13px] font-semibold m-0" style="color:rgba(255,255,255,.85)">SMK Samarqand</p>
+            </div>
+            <p class="text-[11px] m-0" style="color:rgba(255,255,255,.35)">Xodimlarni baholash tizimi · © {{ date('Y') }} · Barcha huquqlar himoyalangan</p>
+        </footer>
+
+    </div>
+
     @stack('scripts')
-
 </body>
 
 </html>

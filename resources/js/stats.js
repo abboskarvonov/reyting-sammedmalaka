@@ -55,10 +55,10 @@ function scoreGrad(ctx, chartArea, value, horiz = true) {
         ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
         : ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
     const [s, e] = value >= 4.5
-        ? ['#10B981', '#6EE7B7']
+        ? ['#006c49', '#2d9e6b']
         : value >= 3.5
-            ? ['#F59E0B', '#FCD34D']
-            : ['#EF4444', '#FCA5A5'];
+            ? ['#784b00', '#a86800']
+            : ['#ba1a1a', '#d94444'];
     g.addColorStop(0, s);
     g.addColorStop(1, e);
     return g;
@@ -80,7 +80,7 @@ function bTeacher() {
                 data: TD.scores,
                 backgroundColor(ctx) {
                     const { ctx: c, chartArea: ca } = ctx.chart;
-                    if (!ca) return '#10B981';
+                    if (!ca) return '#006c49';
                     return scoreGrad(c, ca, TD.scores[ctx.dataIndex], true);
                 },
                 borderRadius: 5,
@@ -202,8 +202,8 @@ function bDonut() {
             labels: ['Bajarilgan', 'Bajarilmagan'],
             datasets: [{
                 data: [DONE_N || 0.01, PEND_N || 0.01],
-                backgroundColor: ['#10B981', '#EF4444'],
-                hoverBackgroundColor: ['#059669', '#DC2626'],
+                backgroundColor: ['#006c49', '#ba1a1a'],
+                hoverBackgroundColor: ['#005038', '#8f1414'],
                 borderWidth: 0,
                 hoverOffset: 4
             }]

@@ -34,1005 +34,680 @@
     $tkDn = $tkF->map(fn($t) => (int) $t->tasks_completed)->toArray();
 
     /* Modal uchun: o'qituvchi → topshiriqlar + yo'nalishlar bo'yicha ball */
-$teacherFullData = $allTeachers
-    ->mapWithKeys(
-        fn($t) => [
-            $t->id => [
-                'name' => $t->user->name,
-                'tasks' =>
-                    ($t->tasks_total ?? 0) > 0
-                        ? $t->taskAssignments
+    $teacherFullData = $allTeachers
+        ->mapWithKeys(
+            fn($t) => [
+                $t->id => [
+                    'name' => $t->user->name,
+                    'tasks' =>
+                        ($t->tasks_total ?? 0) > 0
+                            ? $t->taskAssignments
+                                ->map(
+                                    fn($a) => [
+                                        'title' => $a->task?->title ?? '—',
+                                        'status' => $a->status,
+                                        'priority' => $a->task?->priority ?? 'medium',
+                                        'due' => $a->task?->due_date
+                                            ? \Carbon\Carbon::parse($a->task->due_date)->format('d.m.Y')
+                                            : null,
+                                        'done_at' => $a->completed_at
+                                            ? \Carbon\Carbon::parse($a->completed_at)->format('d.m.Y')
+                                            : null,
+                                        'note' => $a->note ?? null,
+                                    ],
+                                )
+                                ->sortBy(fn($x) => $x['status'] === 'completed' ? 1 : 0)
+                                ->values()
+                                ->toArray()
+                            : [],
+                    'dirs' => isset($teacherDirRatings[$t->id])
+                        ? $teacherDirRatings[$t->id]
                             ->map(
-                                fn($a) => [
-                                    'title' => $a->task?->title ?? '—',
-                                    'status' => $a->status,
-                                    'priority' => $a->task?->priority ?? 'medium',
-                                    'due' => $a->task?->due_date
-                                        ? \Carbon\Carbon::parse($a->task->due_date)->format('d.m.Y')
-                                        : null,
-                                    'done_at' => $a->completed_at
-                                        ? \Carbon\Carbon::parse($a->completed_at)->format('d.m.Y')
-                                        : null,
-                                    'note' => $a->note ?? null,
+                                fn($r) => [
+                                    'name' => $r->dir_name,
+                                    'score' => (float) $r->avg_score,
+                                    'count' => (int) $r->cnt,
                                 ],
                             )
-                            ->sortBy(fn($x) => $x['status'] === 'completed' ? 1 : 0)
+                            ->sortByDesc('score')
                             ->values()
                             ->toArray()
                         : [],
-                'dirs' => isset($teacherDirRatings[$t->id])
-                    ? $teacherDirRatings[$t->id]
-                        ->map(
-                            fn($r) => [
-                                'name' => $r->dir_name,
-                                'score' => (float) $r->avg_score,
-                                'count' => (int) $r->cnt,
-                            ],
-                        )
-                        ->sortByDesc('score')
-                        ->values()
-                        ->toArray()
-                    : [],
+                ],
             ],
-        ],
-    )
-    ->toArray();
+        )
+        ->toArray();
 
-/* Donut overall */
-$aTo = (int) $allTeachers->sum(fn($t) => $t->tasks_total ?? 0);
-$aDn = (int) $allTeachers->sum(fn($t) => $t->tasks_completed ?? 0);
-$aPn = $aTo - $aDn;
-$aPc = $aTo > 0 ? (int) round(($aDn / $aTo) * 100) : 0;
+    /* Donut overall */
+    $aTo = (int) $allTeachers->sum(fn($t) => $t->tasks_total ?? 0);
+    $aDn = (int) $allTeachers->sum(fn($t) => $t->tasks_completed ?? 0);
+    $aPn = $aTo - $aDn;
+    $aPc = $aTo > 0 ? (int) round(($aDn / $aTo) * 100) : 0;
 
-/* Table */
-$rows = $allTeachers
-    ->map(
-        fn($t) => [
-            'id' => (int) $t->id,
-            'name' => $t->user->name,
-            'dept' => $t->department ?? '—',
-            'dirs' => $t->directions->pluck('name')->implode(', ') ?? '—',
-            'score' => round((float) ($t->ratings_avg_total_score ?? 0), 1),
-            'cnt' => (int) ($t->ratings_count ?? 0),
-            'tTot' => (int) ($t->tasks_total ?? 0),
-            'tDn' => (int) ($t->tasks_completed ?? 0),
-            'tPct' =>
-                ($t->tasks_total ?? 0) > 0
-                    ? (int) round((($t->tasks_total - $t->tasks_completed) / $t->tasks_total) * 100)
-                    : 0,
-        ],
-    )
-    ->values()
-    ->toArray();
+    /* Table */
+    $rows = $allTeachers
+        ->map(
+            fn($t) => [
+                'id' => (int) $t->id,
+                'name' => $t->user->name,
+                'dept' => $t->department ?? '—',
+                'dirs' => $t->directions->pluck('name')->implode(', ') ?? '—',
+                'score' => round((float) ($t->ratings_avg_total_score ?? 0), 1),
+                'cnt' => (int) ($t->ratings_count ?? 0),
+                'tTot' => (int) ($t->tasks_total ?? 0),
+                'tDn' => (int) ($t->tasks_completed ?? 0),
+                'tPct' =>
+                    ($t->tasks_total ?? 0) > 0
+                        ? (int) round((($t->tasks_total - $t->tasks_completed) / $t->tasks_total) * 100)
+                        : 0,
+            ],
+        )
+        ->values()
+        ->toArray();
 
-$avgR = round($avgScore ?? 0, 1);
+    $avgR = round($avgScore ?? 0, 1);
 
-/* Davomat chart */
-$attTotal = (int) $attendanceStats->sum();
-$attOnTime = (int) $attendanceStats->get('on_time', 0);
-$attLate = (int) $attendanceStats->get('late', 0);
-$attExcused = (int) $attendanceStats->get('excused', 0);
-$attAbsent = (int) $attendanceStats->get('absent', 0);
+    /* Davomat chart */
+    $attTotal = (int) $attendanceStats->sum();
+    $attOnTime = (int) $attendanceStats->get('on_time', 0);
+    $attLate = (int) $attendanceStats->get('late', 0);
+    $attExcused = (int) $attendanceStats->get('excused', 0);
+    $attAbsent = (int) $attendanceStats->get('absent', 0);
 
-$aRows = $allTeachers
-    ->map(
-        fn($t) => [
-            'name' => $t->user->name,
-            'total' => (int) ($teacherAttendance[$t->id]->total ?? 0),
-            'on_time' => (int) ($teacherAttendance[$t->id]->on_time_cnt ?? 0),
-            'late' => (int) ($teacherAttendance[$t->id]->late_cnt ?? 0),
-            'excused' => (int) ($teacherAttendance[$t->id]->excused_cnt ?? 0),
-            'absent' => (int) ($teacherAttendance[$t->id]->absent_cnt ?? 0),
-        ],
-    )
-    ->filter(fn($r) => $r['total'] > 0)
-    ->sortByDesc(fn($r) => $r['total'] > 0 ? $r['on_time'] / $r['total'] : 0)
-    ->values();
+    $aRows = $allTeachers
+        ->map(
+            fn($t) => [
+                'name' => $t->user->name,
+                'total' => (int) ($teacherAttendance[$t->id]->total ?? 0),
+                'on_time' => (int) ($teacherAttendance[$t->id]->on_time_cnt ?? 0),
+                'late' => (int) ($teacherAttendance[$t->id]->late_cnt ?? 0),
+                'excused' => (int) ($teacherAttendance[$t->id]->excused_cnt ?? 0),
+                'absent' => (int) ($teacherAttendance[$t->id]->absent_cnt ?? 0),
+            ],
+        )
+        ->filter(fn($r) => $r['total'] > 0)
+        ->sortByDesc(fn($r) => $r['total'] > 0 ? $r['on_time'] / $r['total'] : 0)
+        ->values();
 
-$aL = $aRows->map(fn($r) => $r['name'])->toArray();
-$aOT = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['on_time'] / $r['total']) * 100) : 0)->toArray();
-$aLA = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['late'] / $r['total']) * 100) : 0)->toArray();
-$aEX = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['excused'] / $r['total']) * 100) : 0)->toArray();
-$aAB = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['absent'] / $r['total']) * 100) : 0)->toArray();
-$aTO = $aRows->map(fn($r) => (int) $r['total'])->toArray();
-$aDN = $aRows->map(fn($r) => (int) $r['on_time'])->toArray();
-$aLN = $aRows->map(fn($r) => (int) $r['late'])->toArray();
-$aEN = $aRows->map(fn($r) => (int) $r['excused'])->toArray();
-$aAN = $aRows->map(fn($r) => (int) $r['absent'])->toArray();
+    $aL = $aRows->map(fn($r) => $r['name'])->toArray();
+    $aOT = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['on_time'] / $r['total']) * 100) : 0)->toArray();
+    $aLA = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['late'] / $r['total']) * 100) : 0)->toArray();
+    $aEX = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['excused'] / $r['total']) * 100) : 0)->toArray();
+    $aAB = $aRows->map(fn($r) => $r['total'] > 0 ? (int) round(($r['absent'] / $r['total']) * 100) : 0)->toArray();
+    $aTO = $aRows->map(fn($r) => (int) $r['total'])->toArray();
+    $aDN = $aRows->map(fn($r) => (int) $r['on_time'])->toArray();
+    $aLN = $aRows->map(fn($r) => (int) $r['late'])->toArray();
+    $aEN = $aRows->map(fn($r) => (int) $r['excused'])->toArray();
+    $aAN = $aRows->map(fn($r) => (int) $r['absent'])->toArray();
 
-$currentMonth = \Carbon\Carbon::now()->locale('uz')->isoFormat('MMMM YYYY');
+    $currentMonth = \Carbon\Carbon::now()->locale('uz')->isoFormat('MMMM YYYY');
 
-/* Direction modal uchun: direction_id => [{teacher_name, avg_score, cnt}] */
-$dirTeacherData = [];
-foreach ($directionStats as $dir) {
-    $teachers = $dirTeacherRatings->get($dir->id, collect());
-    $dirTeacherData[$dir->id] = [
-        'name' => $dir->name,
-        'score' => round((float) $dir->ratings_avg_total_score, 2),
-        'count' => (int) $dir->ratings_count,
-        'teachers' => $teachers
-            ->map(
-                fn($t) => [
-                    'name' => $t->teacher_name,
-                    'score' => (float) $t->avg_score,
-                    'cnt' => (int) $t->cnt,
+    /* Direction modal uchun: direction_id => [{teacher_name, avg_score, cnt}] */
+    $dirTeacherData = [];
+    foreach ($directionStats as $dir) {
+        $teachers = $dirTeacherRatings->get($dir->id, collect());
+        $dirTeacherData[$dir->id] = [
+            'name' => $dir->name,
+            'score' => round((float) $dir->ratings_avg_total_score, 2),
+            'count' => (int) $dir->ratings_count,
+            'teachers' => $teachers
+                ->map(
+                    fn($t) => [
+                        'name' => $t->teacher_name,
+                        'score' => (float) $t->avg_score,
+                        'cnt' => (int) $t->cnt,
                     ],
                 )
                 ->values()
                 ->toArray(),
         ];
     }
+
+    /* Avatar gradients */
+    $aGs = [
+        'linear-gradient(135deg,#004ac6,#2563eb)',
+        'linear-gradient(135deg,#0EA5E9,#06B6D4)',
+        'linear-gradient(135deg,#006c49,#2d9e6b)',
+        'linear-gradient(135deg,#8B5CF6,#A78BFA)',
+        'linear-gradient(135deg,#784b00,#a86800)',
+    ];
 @endphp
 
-{{-- ═══════ PAGE HEADER ═══════ --}}
-@section('page-header')
-    <div class="border-b border-slate-100" style="background:linear-gradient(135deg,#1E3A5F 0%,#1e4d8c 60%,#2563EB 100%)">
-        <div class="px-8 py-7 flex items-center justify-between flex-wrap gap-3">
-            <div>
-                <h1 class="text-[26px] font-extrabold text-white m-0 leading-tight">Ochiq statistika</h1>
-                <p class="text-[13px] text-white/60 mt-1.5 m-0">O'qituvchilar faoliyati · baholash natijalari · topshiriqlar
-                    tahlili</p>
-            </div>
-            <div class="flex items-center gap-2 text-[12px] text-white/70 bg-white/10 px-3 py-1.5 rounded-full">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                Jonli ma'lumot
-            </div>
-        </div>
-    </div>
-@endsection
-
-{{-- ═══════ CONTENT ═══════ --}}
 @section('content')
     <div x-data="sApp()" x-init="$nextTick(initCharts)" x-cloak>
 
-        {{-- ══════════════════════════════════════════════════════
-         ROW 1 — 3 KPI cards
-         ══════════════════════════════════════════════════ --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 *:min-w-0 *:overflow-hidden mb-5">
-
-            {{-- Jami xodimlar --}}
-            <div class="card px-5.5 py-5">
-                <div class="flex items-start justify-between mb-2.5">
-                    <p class="text-xs font-medium text-gray-500 m-0">Jami xodimlar</p>
-                    <span
-                        class="w-7.5 h-7.5 rounded-lg bg-indigo-50 flex items-center justify-center text-[13px] text-blue-500 shrink-0">
-                        <i class="fas fa-users"></i>
-                    </span>
-                </div>
-                <p class="text-[32px] font-extrabold text-gray-900 m-0 mb-2 leading-none tabular-nums">{{ $totalTeachers }}
-                </p>
-                <span class="tp tp-n"><i class="fas fa-circle" style="font-size:5px"></i>Faol o'qituvchi</span>
+        {{-- ══ PAGE HEADER ══ --}}
+        <section class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+                <h2 class="text-[36px] font-bold leading-tight m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Ochiq statistika</h2>
+                <p class="text-sm mt-1 m-0" style="color:#434655">Akademik ko'rsatkichlar va xodimlar faoliyati tahlili</p>
             </div>
+            <div class="flex items-center gap-2 px-4 py-2 rounded-full border" style="background:#fff;border-color:rgba(195,198,215,.3);box-shadow:0 1px 3px rgba(0,0,0,.05)">
+                <span class="w-2 h-2 rounded-full animate-pulse inline-block" style="background:#006c49"></span>
+                <span class="text-xs" style="color:#434655">Jonli ma'lumot</span>
+            </div>
+        </section>
 
-            {{-- O'rtacha ball --}}
-            <div class="card px-5.5 py-5">
-                <div class="flex items-start justify-between mb-2.5">
-                    <p class="text-xs font-medium text-gray-500 m-0">O'rtacha ball</p>
-                    <span
-                        class="w-7.5 h-7.5 rounded-lg bg-yellow-100 flex items-center justify-center text-[13px] text-yellow-600 shrink-0">
-                        <i class="fas fa-star"></i>
-                    </span>
+        {{-- ══ KPI CARDS (4) ══ --}}
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+
+            <x-public.kpi-card
+                icon="badge"
+                label="Jami xodimlar"
+                :value="$totalTeachers"
+                trend-label="Faol"
+                :bar-pct="75"
+            />
+
+            <x-public.kpi-card
+                icon="star"
+                label="O'rtacha ball"
+                :value="$avgR ?: '—'"
+                trend-label="Ball"
+                icon-bg="rgba(108,248,187,.25)"
+                icon-color="#006c49"
+                bar-color="#006c49"
+                :bar-pct="$avgR > 0 ? min(100, round($avgR / 5 * 100)) : 0"
+            />
+
+            <x-public.kpi-card
+                icon="task_alt"
+                label="Topshiriqlar bajarilishi"
+                :value="$taskCompletionRate"
+                suffix="%"
+                :trend-label="$taskCompletionRate >= 60 ? 'Yaxshi' : 'Past'"
+                :trend-up="$taskCompletionRate >= 60"
+                icon-bg="rgba(255,221,184,.4)"
+                icon-color="#784b00"
+                bar-color="#784b00"
+                :bar-pct="$taskCompletionRate"
+            />
+
+            <x-public.kpi-card
+                icon="calendar_month"
+                label="O'z vaqtida davomat"
+                :value="$onTimePct"
+                suffix="%"
+                :trend-label="$onTimePct . '%'"
+                :bar-pct="$onTimePct"
+            />
+
+        </section>
+
+        {{-- ══ MAIN DATA COLUMNS ══ --}}
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
+
+            {{-- Teacher Ranking (7 cols) --}}
+            <div class="lg:col-span-7 stats-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="text-lg font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">
+                        O'qituvchilar reytingi (Top 5)
+                    </h4>
+                    <a href="{{ route('public.ratings') }}"
+                       class="text-xs font-semibold flex items-center gap-1 no-underline"
+                       style="color:#004ac6">
+                        Barchasi
+                        <span class="material-symbols-outlined" style="font-size:14px">arrow_forward</span>
+                    </a>
                 </div>
-                <p class="text-[32px] font-extrabold text-gray-900 m-0 mb-2 leading-none tabular-nums">{{ $avgR ?: '—' }}
-                </p>
-                <div class="flex items-center gap-1.25">
-                    <div class="flex gap-0.5">
-                        @for ($s = 1; $s <= 5; $s++)
-                            <i class="fas fa-star text-[10px]"
-                                style="color:{{ $s <= round($avgR) ? '#F59E0B' : '#E5E7EB' }}"></i>
-                        @endfor
+
+                @if ($topTeachers->count() > 0)
+                    <div class="space-y-5">
+                        @foreach ($topTeachers->take(5) as $rk => $tch)
+                            @php
+                                $sc = round((float) $tch->ratings_avg_total_score, 1);
+                                $barPct = min(100, round($sc / 5 * 100));
+                                $ini = collect(explode(' ', $tch->user->name))
+                                    ->map(fn($w) => strtoupper(substr($w, 0, 1)))
+                                    ->take(2)
+                                    ->implode('');
+                            @endphp
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                                             style="background:{{ $aGs[$rk] ?? $aGs[0] }}">
+                                            {{ $ini }}
+                                        </div>
+                                        <span class="text-sm font-semibold" style="color:#0b1c30">{{ $tch->user->name }}</span>
+                                    </div>
+                                    <span class="text-xs font-bold" style="color:#004ac6">{{ number_format($sc, 1) }} ball</span>
+                                </div>
+                                <div class="h-2.5 w-full rounded-full overflow-hidden" style="background:#eff4ff">
+                                    <div class="h-full rounded-full chart-bar-animate" style="background:#004ac6;width:{{ $barPct }}%"></div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
-                    <span class="text-[10px] text-gray-400">5 ballik</span>
-                </div>
-            </div>
-
-            {{-- Topshiriqlar --}}
-            <div class="card px-5.5 py-5">
-                <div class="flex items-start justify-between mb-2.5">
-                    <p class="text-xs font-medium text-gray-500 m-0">Topshiriqlar</p>
-                    <span
-                        class="w-7.5 h-7.5 rounded-lg bg-blue-100 flex items-center justify-center text-[13px] text-blue-600 shrink-0">
-                        <i class="fas fa-clipboard-check"></i>
-                    </span>
-                </div>
-                <p class="text-[32px] font-extrabold text-gray-900 m-0 mb-2 leading-none tabular-nums">
-                    {{ $taskCompletionRate }}<span class="text-lg font-semibold text-gray-500">%</span>
-                </p>
-                @if ($taskCompletionRate >= 70)
-                    <span class="tp tp-g"><i class="fas fa-arrow-up" style="font-size:8px"></i>Yaxshi</span>
-                @elseif($taskCompletionRate >= 40)
-                    <span class="tp tp-n"><i class="fas fa-minus" style="font-size:8px"></i>O'rta</span>
                 @else
-                    <span class="tp tp-r"><i class="fas fa-arrow-down" style="font-size:8px"></i>Past</span>
+                    <div class="flex flex-col items-center justify-center py-12" style="color:#434655">
+                        <span class="material-symbols-outlined mb-3" style="font-size:44px;opacity:.2">trophy</span>
+                        <p class="text-sm m-0">Hali baholash ma'lumotlari yo'q</p>
+                    </div>
                 @endif
             </div>
 
-        </div>
+            {{-- Direction Stats (5 cols) --}}
+            <div class="lg:col-span-5 stats-card p-6">
+                <h4 class="text-lg font-semibold m-0 mb-6" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">
+                    Yo'nalishlar statistikasi
+                </h4>
 
-        {{-- ══════════════════════════════════════════════════════
-         ROW 2 — Teacher chart | Direction chart
-         ══════════════════════════════════════════════════ --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 *:min-w-0 *:overflow-hidden mb-5">
+                @if ($directionStats->count() > 0)
+                    <div class="space-y-5">
+                        @foreach ($directionStats->take(6) as $dir)
+                            @php
+                                $sc = round((float) $dir->ratings_avg_total_score, 2);
+                                $pct = min(100, round($sc / 5 * 100));
+                                $isGood = $sc >= 3.5;
+                            @endphp
+                            <div class="flex flex-col gap-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-semibold" style="color:#0b1c30">{{ $dir->name }}</span>
+                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                          style="{{ $isGood ? 'background:rgba(108,248,187,.25);color:#006c49' : 'background:rgba(186,26,26,.1);color:#ba1a1a' }}">
+                                        {{ $isGood ? 'Faol' : 'Past' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#eff4ff">
+                                        <div class="h-full rounded-full chart-bar-animate"
+                                             style="background:{{ $isGood ? '#006c49' : 'rgba(186,26,26,.7)' }};width:{{ $pct }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-bold min-w-8 text-right" style="color:#434655">{{ $pct }}%</span>
+                                    <button @click="openDirModal({{ $dir->id }})"
+                                            title="O'qituvchilar ko'rish"
+                                            class="shrink-0 w-7 h-7 rounded-lg border-0 cursor-pointer flex items-center justify-center transition-colors"
+                                            style="background:#eff4ff;color:#004ac6"
+                                            onmouseover="this.style.background='#e5eeff'"
+                                            onmouseout="this.style.background='#eff4ff'">
+                                        <span class="material-symbols-outlined" style="font-size:16px">groups</span>
+                                    </button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="flex flex-col items-center justify-center py-12" style="color:#434655">
+                        <span class="material-symbols-outlined mb-3" style="font-size:44px;opacity:.2">account_tree</span>
+                        <p class="text-sm m-0">Yo'nalish ma'lumotlari yo'q</p>
+                    </div>
+                @endif
 
-            {{-- O'qituvchilar reytingi --}}
-            <div class="card px-6.5 py-5.5">
-                <div class="flex items-start justify-between flex-wrap gap-2 mb-4.5">
-                    <div>
-                        <h2 class="text-[15px] font-bold text-gray-900 m-0">O'qituvchilar reytingi</h2>
-                        <p class="text-xs text-gray-400 mt-1 m-0">
-                            @if (count($tL))
-                                <strong class="text-gray-700">{{ count($tL) }}</strong> ta o'qituvchi baholangan
-                            @endif
+                {{-- Insight tip --}}
+                <div class="mt-6 p-4 rounded-xl border" style="background:rgba(0,74,198,.04);border-color:rgba(0,74,198,.1)">
+                    <div class="flex gap-3">
+                        <span class="material-symbols-outlined shrink-0" style="font-size:20px;color:#004ac6">lightbulb</span>
+                        <p class="text-xs leading-relaxed m-0" style="color:#434655">
+                            <span class="font-bold" style="color:#0b1c30">Tavsiya:</span>
+                            Past ko'rsatkichli yo'nalishlar uchun qo'shimcha monitoring va qo'llab-quvvatlash tavsiya etiladi.
                         </p>
                     </div>
-                    <div class="flex items-center gap-3 text-[11px] text-gray-500">
-                        <span class="flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded-[3px] bg-emerald-500 inline-block"></span>A'lo ≥ 4.5
+                </div>
+            </div>
+
+        </section>
+
+        {{-- ══ CHARTS ROW ══ --}}
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+
+            {{-- Teacher chart --}}
+            <div class="stats-card p-6">
+                <div class="flex items-start justify-between flex-wrap gap-2 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(0,74,198,.1)">
+                            <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">bar_chart</span>
+                        </div>
+                        <div>
+                            <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">O'qituvchilar reytingi</h4>
+                            <p class="text-[11px] mt-0.5 m-0" style="color:#434655">
+                                @if (count($tL))
+                                    <strong style="color:#0b1c30">{{ count($tL) }}</strong> ta o'qituvchi baholangan
+                                @else
+                                    Hali baholash ma'lumotlari yo'q
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 text-[11px]" style="color:#434655">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-sm inline-block" style="background:#006c49"></span>A'lo ≥ 4.5
                         </span>
-                        <span class="flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded-[3px] bg-amber-400 inline-block"></span>Yaxshi ≥ 3.5
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-sm inline-block" style="background:#784b00"></span>Yaxshi ≥ 3.5
                         </span>
-                        <span class="flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded-[3px] bg-red-400 inline-block"></span>Qoniqarli &lt; 3.5
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-sm inline-block" style="background:#ba1a1a"></span>Past
                         </span>
                     </div>
                 </div>
                 @if (count($tL) > 0)
                     <div class="cw" id="twrap"><canvas id="tc"></canvas></div>
                 @else
-                    <div class="h-50 flex flex-col items-center justify-center text-gray-400">
-                        <i class="fas fa-chart-bar text-[32px] opacity-20 mb-2.5"></i>
-                        <p class="text-[13px] m-0">Hali baholash ma'lumotlari yo'q</p>
+                    <div class="h-48 flex flex-col items-center justify-center" style="color:#434655">
+                        <span class="material-symbols-outlined mb-2" style="font-size:40px;opacity:.2">bar_chart</span>
+                        <p class="text-sm m-0">Hali baholash ma'lumotlari yo'q</p>
                     </div>
                 @endif
             </div>
 
-            {{-- Yo'nalishlar statistikasi --}}
-            <div class="card px-6.5 py-5.5 flex flex-col">
-                <div class="flex items-start justify-between flex-wrap gap-2 mb-4">
+            {{-- Task: Donut + Per-teacher --}}
+            <div class="stats-card p-6 flex flex-col">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(108,248,187,.2)">
+                        <span class="material-symbols-outlined" style="font-size:18px;color:#006c49">task_alt</span>
+                    </div>
                     <div>
-                        <h2 class="text-[15px] font-bold text-gray-900 m-0">Yo'nalishlar statistikasi</h2>
-                        <p class="text-xs text-gray-400 mt-1 m-0">Yo'nalish bo'yicha o'rtacha baholash natijasi</p>
+                        <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Topshiriqlar holati</h4>
+                        <p class="text-[11px] mt-0.5 m-0" style="color:#434655">Umumiy bajarilish ko'rsatkichi</p>
                     </div>
-                    <div class="flex items-center gap-3 text-[11px] text-gray-500">
-                        <span class="flex items-center gap-1"><span
-                                class="w-2 h-2 rounded-sm bg-emerald-500 inline-block"></span>≥ 4.5</span>
-                        <span class="flex items-center gap-1"><span
-                                class="w-2 h-2 rounded-sm bg-amber-400 inline-block"></span>≥ 3.5</span>
-                        <span class="flex items-center gap-1"><span
-                                class="w-2 h-2 rounded-sm bg-red-400 inline-block"></span>&lt; 3.5</span>
-                    </div>
-                </div>
-                @if ($directionStats->count() > 0)
-                    <div class="flex flex-col gap-3 flex-1">
-                        @foreach ($directionStats as $dir)
-                            @php
-                                $sc = round((float) $dir->ratings_avg_total_score, 2);
-                                $pct = min(100, round(($sc / 5) * 100));
-                                $col = $sc >= 4.5 ? '#10B981' : ($sc >= 3.5 ? '#F59E0B' : '#EF4444');
-                                $tcol = $sc >= 4.5 ? '#16A34A' : ($sc >= 3.5 ? '#CA8A04' : '#DC2626');
-                            @endphp
-                            <div class="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center justify-between mb-1.5">
-                                        <p class="text-[13px] font-semibold text-gray-800 m-0 truncate pr-2">
-                                            {{ $dir->name }}</p>
-                                        <span class="text-[11px] text-gray-400 shrink-0">{{ $dir->ratings_count }} ta</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                            <div class="h-full rounded-full transition-[width] duration-700 ease-out"
-                                                style="width:{{ $pct }}%;background:{{ $col }}"></div>
-                                        </div>
-                                        <span class="text-[13px] font-extrabold tabular-nums shrink-0 min-w-8 text-right"
-                                            style="color:{{ $tcol }}">{{ number_format($sc, 2) }}</span>
-                                        <button @click="openDirModal({{ $dir->id }})"
-                                            title="Yo'nalish bo'yicha o'qituvchilar"
-                                            class="shrink-0 w-7 h-7 rounded-lg bg-indigo-50 text-blue-500 border-0 cursor-pointer flex items-center justify-center transition-colors duration-150"
-                                            onmouseover="this.style.background='#DBEAFE'"
-                                            onmouseout="this.style.background='#EEF2FF'">
-                                            <i class="fas fa-users text-[11px]"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="flex-1 h-50 flex flex-col items-center justify-center text-gray-400">
-                        <i class="fas fa-sitemap text-[32px] opacity-20 mb-2.5"></i>
-                        <p class="text-[13px] m-0">Yo'nalish ma'lumotlari yo'q</p>
-                    </div>
-                @endif
-            </div>
-
-        </div>
-
-        {{-- ══════════════════════════════════════════════════════
-         ROW 3 — Top 5 | Donut | Teacher tasks
-         ══════════════════════════════════════════════════ --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 *:min-w-0 *:overflow-hidden mb-5">
-
-            {{-- ── Card 1: Top 5 O'qituvchi ──────────────────────────────── --}}
-            <div class="card p-5.5 flex flex-col">
-                <div class="mb-4">
-                    <h2 class="text-sm font-bold text-gray-900 m-0">Top 5 O'qituvchi</h2>
-                    <p class="text-[11px] text-gray-400 mt-0.75 m-0">Eng yuqori baholash natijalari</p>
-                </div>
-                @if ($topTeachers->count() > 0)
-                    <div class="flex-1">
-                        @foreach ($topTeachers->take(5) as $rk => $tch)
-                            @php
-                                $sc = round((float) $tch->ratings_avg_total_score, 1);
-                                $ini = collect(explode(' ', $tch->user->name))
-                                    ->map(fn($w) => strtoupper(substr($w, 0, 1)))
-                                    ->take(2)
-                                    ->implode('');
-                                $aGs = [
-                                    'linear-gradient(135deg,#1E3A5F,#3B82F6)',
-                                    'linear-gradient(135deg,#0EA5E9,#06B6D4)',
-                                    'linear-gradient(135deg,#10B981,#34D399)',
-                                    'linear-gradient(135deg,#8B5CF6,#A78BFA)',
-                                    'linear-gradient(135deg,#F59E0B,#FBBF24)',
-                                ];
-                                $rGs = [
-                                    'linear-gradient(135deg,#F59E0B,#D97706)',
-                                    'linear-gradient(135deg,#9CA3AF,#6B7280)',
-                                    'linear-gradient(135deg,#B45309,#92400E)',
-                                ];
-                                $sCol = $sc >= 4.5 ? '#16A34A' : ($sc >= 3.5 ? '#CA8A04' : '#DC2626');
-                            @endphp
-                            <div class="{{ $rk < 4 ? 'ldiv' : '' }} flex items-center gap-3 py-2.75">
-                                <div class="w-5.5 h-5.5 rounded shrink-0 flex items-center justify-center text-[10px] font-bold"
-                                    style="{{ $rk < 3 ? 'background:' . $rGs[$rk] . ';color:#fff' : 'background:#F3F4F6;color:#6B7280' }}">
-                                    {{ $rk + 1 }}
-                                </div>
-                                <div class="w-10 h-10 rounded-[10px] shrink-0 flex items-center justify-center text-white text-[13px] font-bold"
-                                    style="background:{{ $aGs[$rk] ?? $aGs[0] }}">
-                                    {{ $ini }}
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-[13px] font-semibold text-gray-900 m-0 truncate">{{ $tch->user->name }}
-                                    </p>
-                                    <p class="text-[11px] text-gray-400 mt-px m-0">{{ $tch->department ?? '—' }}</p>
-                                </div>
-                                <div class="shrink-0 text-right">
-                                    <p class="text-base font-extrabold m-0 leading-none tabular-nums"
-                                        style="color:{{ $sCol }}">
-                                        {{ number_format($sc, 1) }}
-                                    </p>
-                                    <div class="flex justify-end gap-px mt-0.75">
-                                        @for ($s = 1; $s <= 5; $s++)
-                                            <i class="fas fa-star text-[8px]"
-                                                style="color:{{ $s <= round($sc) ? '#F59E0B' : '#E5E7EB' }}"></i>
-                                        @endfor
-                                    </div>
-                                    <p class="text-[10px] text-gray-400 mt-0.5 m-0 text-right">{{ $tch->ratings_count }}
-                                        ta</p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="flex-1 flex flex-col items-center justify-center py-8 text-gray-400 text-center">
-                        <i class="fas fa-trophy text-[28px] opacity-20 block mb-2"></i>
-                        <p class="text-xs m-0">Ma'lumot yo'q</p>
-                    </div>
-                @endif
-            </div>
-
-            {{-- ── Card 2: Topshiriqlar holati (donut) ──────────────────── --}}
-            <div class="card p-5.5 flex flex-col">
-                <div class="mb-4">
-                    <h2 class="text-sm font-bold text-gray-900 m-0">Topshiriqlar holati</h2>
-                    <p class="text-[11px] text-gray-400 mt-0.75 m-0">Umumiy bajarilish ko'rsatkichi</p>
                 </div>
 
                 {{-- Donut --}}
                 <div class="flex justify-center mb-5">
-                    <div class="relative w-35 h-35 shrink-0">
+                    <div class="relative shrink-0" style="width:140px;height:140px">
                         <canvas id="dn" width="140" height="140"></canvas>
                         <div class="dlabel">
-                            <p class="text-2xl font-extrabold text-gray-900 leading-none m-0 tabular-nums">
-                                {{ $aPc }}%</p>
-                            <p class="text-[10px] text-gray-400 mt-0.75 m-0">Bajarilgan</p>
+                            <p class="text-2xl font-bold leading-none m-0" style="color:#0b1c30">{{ $aPc }}%</p>
+                            <p class="text-[10px] mt-1 m-0" style="color:#434655">Bajarilgan</p>
                         </div>
                     </div>
                 </div>
 
                 {{-- Legend --}}
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-3 mb-5">
                     <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-1.75">
-                            <span class="w-2.25 h-2.25 rounded-full bg-emerald-500 inline-block shrink-0"></span>
-                            <span class="text-xs text-gray-500">Bajarilgan</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background:#006c49"></span>
+                            <span class="text-xs" style="color:#434655">Bajarilgan</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[15px] font-bold text-gray-900 tabular-nums">{{ $aDn }}</span>
-                            <span class="tp tp-g" style="font-size:10px;padding:1px 7px">{{ $aPc }}%</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-base font-bold" style="color:#0b1c30">{{ $aDn }}</span>
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#dcfce7;color:#006c49">{{ $aPc }}%</span>
                         </div>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-1.75">
-                            <span class="w-2.25 h-2.25 rounded-full bg-red-500 inline-block shrink-0"></span>
-                            <span class="text-xs text-gray-500">Kutilmoqda</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background:#ba1a1a"></span>
+                            <span class="text-xs" style="color:#434655">Kutilmoqda</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[15px] font-bold text-gray-900 tabular-nums">{{ $aPn }}</span>
-                            <span class="tp tp-r" style="font-size:10px;padding:1px 7px">{{ 100 - $aPc }}%</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-base font-bold" style="color:#0b1c30">{{ $aPn }}</span>
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fee2e2;color:#ba1a1a">{{ 100 - $aPc }}%</span>
                         </div>
                     </div>
-                    <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-1">
-                        <div class="h-full rounded-full transition-[width] duration-800 ease-out"
-                            style="background:linear-gradient(90deg,#10B981,#34D399);width:{{ $aPc }}%"></div>
+                    <div class="h-1.5 rounded-full overflow-hidden mt-1" style="background:#eff4ff">
+                        <div class="h-full rounded-full" style="background:#006c49;width:{{ $aPc }}%"></div>
                     </div>
                 </div>
-            </div>
 
-            {{-- ── Card 3: O'qituvchi bo'yicha topshiriqlar ─────────────── --}}
-            <div class="card p-5.5 flex flex-col">
-                <div class="mb-3.5">
-                    <h2 class="text-sm font-bold text-gray-900 m-0">O'qituvchi bo'yicha</h2>
-                    <p class="text-[11px] text-gray-400 mt-0.75 m-0">Topshiriq bajarilish holati</p>
-                </div>
+                {{-- Per-teacher tasks --}}
                 @if (count($tkL) > 0)
-                    <div class="flex flex-col flex-1">
+                    <div class="flex flex-col flex-1 pt-4" style="border-top:1px solid rgba(195,198,215,.2)">
+                        <h5 class="text-[10px] font-bold uppercase tracking-wide mb-3 m-0" style="color:#434655">O'qituvchi bo'yicha</h5>
                         @foreach ($tkF as $tkIdx => $tkT)
                             @php
-                                $tkPct =
-                                    $tkT->tasks_total > 0
-                                        ? (int) round(($tkT->tasks_completed / $tkT->tasks_total) * 100)
-                                        : 0;
-                                $tkBarCol =
-                                    $tkPct >= 100
-                                        ? '#10B981'
-                                        : ($tkPct >= 60
-                                            ? '#34D399'
-                                            : ($tkPct >= 30
-                                                ? '#F59E0B'
-                                                : '#EF4444'));
+                                $tkPct = $tkT->tasks_total > 0 ? (int) round(($tkT->tasks_completed / $tkT->tasks_total) * 100) : 0;
+                                $tkBarCol = $tkPct >= 60 ? '#006c49' : ($tkPct >= 30 ? '#784b00' : '#ba1a1a');
                             @endphp
-                            <div
-                                class="flex items-center gap-2.5 py-2.25 {{ $tkIdx < count($tkF) - 1 ? 'border-b border-gray-50' : '' }}">
-                                <p class="text-xs font-medium text-gray-700 m-0 flex-1 min-w-0 truncate">
-                                    {{ $tkT->user->name }}
-                                </p>
-                                <div class="w-18 h-1.25 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                                    <div class="h-full rounded-full transition-[width] duration-600 ease-out"
-                                        style="background:{{ $tkBarCol }};width:{{ $tkPct }}%"></div>
+                            <div class="flex items-center gap-2.5 py-2 {{ $tkIdx < count($tkF) - 1 ? 'ldiv' : '' }}">
+                                <p class="text-xs font-medium m-0 flex-1 min-w-0 truncate" style="color:#0b1c30">{{ $tkT->user->name }}</p>
+                                <div class="w-20 h-1.5 rounded-full overflow-hidden shrink-0" style="background:#eff4ff">
+                                    <div class="h-full rounded-full" style="background:{{ $tkBarCol }};width:{{ $tkPct }}%"></div>
                                 </div>
-                                <span class="text-[11px] text-gray-500 shrink-0 tabular-nums min-w-7 text-right">
+                                <span class="text-[11px] shrink-0 min-w-8 text-right tabular-nums" style="color:#434655">
                                     {{ $tkT->tasks_completed }}/{{ $tkT->tasks_total }}
                                 </span>
                                 <button @click="openModal({{ $tkT->id }})" title="Batafsil"
-                                    class="shrink-0 w-7 h-7 rounded-[7px] bg-indigo-50 text-blue-500 border-0 cursor-pointer flex items-center justify-center transition-colors duration-150"
-                                    onmouseover="this.style.background='#DBEAFE'"
-                                    onmouseout="this.style.background='#EEF2FF'">
-                                    <i class="fas fa-chart-simple text-[11px]"></i>
+                                        class="shrink-0 w-7 h-7 rounded-lg border-0 cursor-pointer flex items-center justify-center transition-colors"
+                                        style="background:#eff4ff;color:#004ac6"
+                                        onmouseover="this.style.background='#e5eeff'"
+                                        onmouseout="this.style.background='#eff4ff'">
+                                    <span class="material-symbols-outlined" style="font-size:16px">analytics</span>
                                 </button>
                             </div>
                         @endforeach
                     </div>
                 @else
-                    <div class="flex-1 flex flex-col items-center justify-center py-8 text-gray-400 text-center">
-                        <i class="fas fa-clipboard-list text-[28px] opacity-20 block mb-2"></i>
+                    <div class="flex-1 flex flex-col items-center justify-center py-6 pt-4" style="border-top:1px solid rgba(195,198,215,.2);color:#434655">
+                        <span class="material-symbols-outlined mb-2" style="font-size:36px;opacity:.2">assignment</span>
                         <p class="text-xs m-0">Topshiriq ma'lumotlari yo'q</p>
                     </div>
                 @endif
             </div>
 
-        </div>
+        </section>
 
-        {{-- ══════════════════════════════════════════════════════
-         ROW 4 — Davomat statistikasi (full-width)
-         ══════════════════════════════════════════════════ --}}
-        <div class="card overflow-hidden mb-5" x-data="attApp()" x-init="init()">
+        {{-- ══ DAVOMAT ══ --}}
+        <section class="mb-6">
+            <div class="stats-card overflow-hidden" x-data="attApp()" x-init="init()">
 
-            {{-- Header --}}
-            <div class="px-5.5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-2">
-                    <span
-                        class="w-7 h-7 rounded-[7px] bg-blue-100 flex items-center justify-center text-blue-600 text-[11px] shrink-0">
-                        <i class="fas fa-calendar-check"></i>
-                    </span>
-                    <div>
-                        <h2 class="text-[13px] font-bold text-gray-900 m-0">Davomat statistikasi</h2>
-                        <p class="text-[11px] text-gray-400 m-0" x-text="currentLabel"></p>
-                    </div>
-                </div>
-                {{-- Oy filtri --}}
-                <div class="flex items-center gap-2 flex-wrap">
-                    <select x-model="selectedMonth" @change="setMonth(selectedMonth)"
-                        class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-gray-700 outline-none cursor-pointer focus:border-blue-400 transition-colors">
-                        <template x-for="mk in monthKeys" :key="mk">
-                            <option :value="mk" x-text="allData[mk].label"></option>
-                        </template>
-                    </select>
-                    <div class="flex flex-wrap gap-2 text-[10px] text-gray-500 border-l border-gray-100 pl-2 ml-1">
-                        <span class="flex items-center gap-0.75"><span
-                                class="w-2 h-2 rounded-xs bg-emerald-500 inline-block"></span>O'z vaqtida</span>
-                        <span class="flex items-center gap-0.75"><span
-                                class="w-2 h-2 rounded-xs bg-amber-400 inline-block"></span>Kech</span>
-                        <span class="flex items-center gap-0.75"><span
-                                class="w-2 h-2 rounded-xs bg-blue-500 inline-block"></span>Uzrli</span>
-                        <span class="flex items-center gap-0.75"><span
-                                class="w-2 h-2 rounded-xs bg-red-500 inline-block"></span>Kelmagan</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- 4 summary stat boxes (Alpine reactive) --}}
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #F3F4F6">
-                <div class="px-5 py-3.5 border-r border-gray-100">
-                    <p class="text-[11px] text-gray-500 m-0 mb-1.25">O'z vaqtida</p>
-                    <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums"
-                        x-text="summary.on_time"></p>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]"
-                        style="background:#DCFCE7;color:#16A34A"
-                        x-text="(summary.total > 0 ? Math.round(summary.on_time/summary.total*100) : 0)+'%'"></span>
-                </div>
-                <div class="px-5 py-3.5 border-r border-gray-100">
-                    <p class="text-[11px] text-gray-500 m-0 mb-1.25">Kech keldi</p>
-                    <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums"
-                        x-text="summary.late"></p>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]"
-                        style="background:#FEF9C3;color:#CA8A04"
-                        x-text="(summary.total > 0 ? Math.round(summary.late/summary.total*100) : 0)+'%'"></span>
-                </div>
-                <div class="px-5 py-3.5 border-r border-gray-100">
-                    <p class="text-[11px] text-gray-500 m-0 mb-1.25">Uzrli sabab</p>
-                    <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums"
-                        x-text="summary.excused"></p>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]"
-                        style="background:#DBEAFE;color:#2563EB"
-                        x-text="(summary.total > 0 ? Math.round(summary.excused/summary.total*100) : 0)+'%'"></span>
-                </div>
-                <div class="px-5 py-3.5">
-                    <p class="text-[11px] text-gray-500 m-0 mb-1.25">Kelmagan</p>
-                    <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums"
-                        x-text="summary.absent"></p>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]"
-                        style="background:#FEE2E2;color:#DC2626"
-                        x-text="(summary.total > 0 ? Math.round(summary.absent/summary.total*100) : 0)+'%'"></span>
-                </div>
-            </div>
-
-            {{-- Per-teacher attendance bars --}}
-            <div x-show="hasData" class="px-5.5 py-2">
-                <template x-for="(name, i) in (currentData?.labels ?? [])" :key="i">
-                    <div class="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                        <p class="text-[12px] font-medium text-gray-700 m-0 shrink-0 truncate" style="width:150px"
-                            x-text="name"></p>
-                        <div class="flex-1 rounded-lg overflow-hidden flex"
-                            style="height:22px;background:#F1F5F9;min-width:80px">
-                            <template x-if="currentData.don[i] > 0">
-                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                    :style="`flex:${currentData.don[i]};background:rgba(16,185,129,.9)`"
-                                    x-text="currentData.don[i]"></div>
-                            </template>
-                            <template x-if="currentData.lan[i] > 0">
-                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                    :style="`flex:${currentData.lan[i]};background:rgba(245,158,11,.9)`"
-                                    x-text="currentData.lan[i]"></div>
-                            </template>
-                            <template x-if="currentData.exn[i] > 0">
-                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                    :style="`flex:${currentData.exn[i]};background:rgba(59,130,246,.9)`"
-                                    x-text="currentData.exn[i]"></div>
-                            </template>
-                            <template x-if="currentData.abn[i] > 0">
-                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                    :style="`flex:${currentData.abn[i]};background:rgba(239,68,68,.85)`"
-                                    x-text="currentData.abn[i]"></div>
-                            </template>
+                {{-- Header --}}
+                <div class="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style="border-bottom:1px solid rgba(195,198,215,.2)">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(0,74,198,.1)">
+                            <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">calendar_month</span>
                         </div>
-                        <span class="text-[11px] text-gray-400 shrink-0 tabular-nums min-w-12 text-right"
-                            x-text="currentData.tot[i]+' kun'"></span>
+                        <div>
+                            <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Davomat statistikasi</h4>
+                            <p class="text-[11px] m-0" style="color:#434655" x-text="currentLabel"></p>
+                        </div>
                     </div>
-                </template>
-            </div>
-            <div x-show="!hasData" class="p-8 text-center text-gray-400">
-                <i class="fas fa-calendar-xmark text-2xl opacity-25 block mb-2"></i>
-                <p class="text-xs m-0" x-text="''+currentLabel+' uchun davomat ma\'lumotlari yo\'q'"></p>
-            </div>
-        </div>
-
-        {{-- ══════════════════════════════════════════════════════
-         ROW 5 — O'qituvchilar jadvali (full-width)
-         ══════════════════════════════════════════════════ --}}
-        <div class="card overflow-hidden">
-
-            {{-- Header --}}
-            <div class="px-5.5 py-3.5 border-b border-gray-50 flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-2 flex-1 min-w-40">
-                    <span
-                        class="w-7 h-7 rounded-[7px] bg-indigo-50 flex items-center justify-center text-[11px] text-blue-500">
-                        <i class="fas fa-table-list"></i>
-                    </span>
-                    <h2 class="text-[13px] font-bold text-gray-900 m-0">Barcha o'qituvchilar</h2>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <select x-model="fd"
-                        class="bg-slate-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none cursor-pointer">
-                        <option value="">Barcha yo'nalishlar</option>
-                        @foreach ($directionStats as $dir)
-                            <option value="{{ $dir->name }}">{{ $dir->name }}</option>
-                        @endforeach
-                    </select>
-                    <div class="flex items-center gap-1.5 bg-slate-50 border border-gray-200 rounded-lg px-2.5 py-1.5">
-                        <i class="fas fa-search text-[10px] text-gray-400"></i>
-                        <input type="search" x-model="fs" placeholder="Qidirish..."
-                            class="bg-transparent border-0 outline-none text-xs text-gray-700 w-32.5">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <select x-model="selectedMonth" @change="setMonth(selectedMonth)"
+                                class="rounded-lg px-3 py-1.5 text-xs font-semibold outline-none cursor-pointer border-none"
+                                style="background:#eff4ff;color:#0b1c30"
+                                onfocus="this.style.boxShadow='0 0 0 2px rgba(0,74,198,.2)'"
+                                onblur="this.style.boxShadow=''">
+                            <template x-for="mk in monthKeys" :key="mk">
+                                <option :value="mk" x-text="allData[mk].label"></option>
+                            </template>
+                        </select>
+                        <div class="flex flex-wrap gap-3 text-[10px] pl-3" style="border-left:1px solid rgba(195,198,215,.3);color:#434655">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm inline-block" style="background:#006c49"></span>O'z vaqtida</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm inline-block" style="background:#784b00"></span>Kech</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm inline-block" style="background:#004ac6"></span>Uzrli</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm inline-block" style="background:#ba1a1a"></span>Kelmagan</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Table --}}
-            <div class="overflow-x-auto">
-                <table class="w-full" style="border-collapse:collapse">
-                    <thead>
-                        <tr class="bg-neutral-50 border-b border-gray-100">
-                            <th
-                                class="px-4 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-10">
-                                #</th>
-                            <th
-                                class="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                                O'qituvchi</th>
-                            <th
-                                class="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide hide-md">
-                                Yo'nalishlar</th>
-                            <th
-                                class="px-4 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                                Ball</th>
-                            <th
-                                class="px-4 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wide hide-sm">
-                                Baholashlar</th>
-                            <th
-                                class="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                                Topshiriqlar</th>
-                            <th class="px-4 py-2.5 w-22.5"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="(r,i) in filtered" :key="r.id">
-                            <tr class="trow">
-                                <td class="px-4 py-2.75 text-center">
-                                    <span class="text-[11px] font-semibold text-gray-400" x-text="i+1"></span>
-                                </td>
-                                <td class="px-4 py-2.75">
-                                    <div class="flex items-center gap-2.5">
-                                        <div class="w-8.5 h-8.5 rounded-[9px] shrink-0 flex items-center justify-center text-white text-[11px] font-bold"
-                                            style="background:linear-gradient(135deg,#1E3A5F,#3B82F6)"
-                                            x-text="r.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()">
-                                        </div>
-                                        <div>
-                                            <p class="text-[13px] font-semibold text-gray-900 m-0" x-text="r.name"></p>
-                                            <p class="text-[11px] text-gray-400 m-0" x-text="r.dept"></p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-2.75 hide-md">
-                                    <span class="text-xs text-gray-500" x-text="r.dirs"></span>
-                                </td>
-                                <td class="px-4 py-2.75 text-center">
-                                    <span class="sb"
-                                        :class="r.score >= 4.5 ? 'sb-g' : r.score >= 3.5 ? 'sb-a' : r.score > 0 ? 'sb-r' :
-                                            'sb-n'"
-                                        x-text="r.score>0?r.score.toFixed(1)+' ★':'—'"></span>
-                                </td>
-                                <td class="px-4 py-2.75 text-center hide-sm">
-                                    <span class="text-xs text-gray-500" x-text="r.cnt+' ta'"></span>
-                                </td>
-                                <td class="px-4 py-2.75">
-                                    <template x-if="r.tTot>0">
-                                        <div class="flex items-center gap-2 min-w-22.5">
-                                            <div class="tb flex-1">
-                                                <div class="tf"
-                                                    :style="`width:${100-r.tPct}%;background:${r.tPct===0?'#10B981':r.tPct<=30?'#34D399':r.tPct<=60?'#F59E0B':'#EF4444'}`">
-                                                </div>
+                {{-- 4 summary boxes --}}
+                <div class="grid grid-cols-2 md:grid-cols-4" style="border-bottom:1px solid rgba(195,198,215,.2)">
+                    <div class="px-5 py-4" style="border-right:1px solid rgba(195,198,215,.2)">
+                        <p class="text-[11px] m-0 mb-1.5" style="color:#434655">O'z vaqtida</p>
+                        <p class="text-2xl font-bold m-0 mb-1.5 leading-none tabular-nums" style="color:#0b1c30" x-text="summary.on_time"></p>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#dcfce7;color:#006c49"
+                              x-text="(summary.total > 0 ? Math.round(summary.on_time/summary.total*100) : 0)+'%'"></span>
+                    </div>
+                    <div class="px-5 py-4" style="border-right:1px solid rgba(195,198,215,.2)">
+                        <p class="text-[11px] m-0 mb-1.5" style="color:#434655">Kech keldi</p>
+                        <p class="text-2xl font-bold m-0 mb-1.5 leading-none tabular-nums" style="color:#0b1c30" x-text="summary.late"></p>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fef3c7;color:#784b00"
+                              x-text="(summary.total > 0 ? Math.round(summary.late/summary.total*100) : 0)+'%'"></span>
+                    </div>
+                    <div class="px-5 py-4" style="border-right:1px solid rgba(195,198,215,.2)">
+                        <p class="text-[11px] m-0 mb-1.5" style="color:#434655">Uzrli sabab</p>
+                        <p class="text-2xl font-bold m-0 mb-1.5 leading-none tabular-nums" style="color:#0b1c30" x-text="summary.excused"></p>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#dbeafe;color:#004ac6"
+                              x-text="(summary.total > 0 ? Math.round(summary.excused/summary.total*100) : 0)+'%'"></span>
+                    </div>
+                    <div class="px-5 py-4">
+                        <p class="text-[11px] m-0 mb-1.5" style="color:#434655">Kelmagan</p>
+                        <p class="text-2xl font-bold m-0 mb-1.5 leading-none tabular-nums" style="color:#0b1c30" x-text="summary.absent"></p>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fee2e2;color:#ba1a1a"
+                              x-text="(summary.total > 0 ? Math.round(summary.absent/summary.total*100) : 0)+'%'"></span>
+                    </div>
+                </div>
+
+                {{-- Per-teacher attendance bars --}}
+                <div x-show="hasData" class="px-6 py-3">
+                    <template x-for="(name, i) in (currentData?.labels ?? [])" :key="i">
+                        <div class="flex items-center gap-3 py-2.5 ldiv last:border-0">
+                            <p class="text-xs font-medium m-0 shrink-0 truncate" style="width:150px;color:#0b1c30" x-text="name"></p>
+                            <div class="flex-1 rounded-lg overflow-hidden flex" style="height:20px;background:#eff4ff;min-width:80px">
+                                <template x-if="currentData.don[i] > 0">
+                                    <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                         :style="`flex:${currentData.don[i]};background:rgba(0,108,73,.9)`"
+                                         x-text="currentData.don[i]"></div>
+                                </template>
+                                <template x-if="currentData.lan[i] > 0">
+                                    <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                         :style="`flex:${currentData.lan[i]};background:rgba(120,75,0,.9)`"
+                                         x-text="currentData.lan[i]"></div>
+                                </template>
+                                <template x-if="currentData.exn[i] > 0">
+                                    <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                         :style="`flex:${currentData.exn[i]};background:rgba(0,74,198,.9)`"
+                                         x-text="currentData.exn[i]"></div>
+                                </template>
+                                <template x-if="currentData.abn[i] > 0">
+                                    <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                         :style="`flex:${currentData.abn[i]};background:rgba(186,26,26,.85)`"
+                                         x-text="currentData.abn[i]"></div>
+                                </template>
+                            </div>
+                            <span class="text-[11px] shrink-0 tabular-nums min-w-12 text-right" style="color:#434655"
+                                  x-text="currentData.tot[i]+' kun'"></span>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="!hasData" class="px-6 py-10 text-center" style="color:#434655">
+                    <span class="material-symbols-outlined mb-2 block" style="font-size:40px;opacity:.2">calendar_off</span>
+                    <p class="text-sm m-0" x-text="''+currentLabel+' uchun davomat ma\'lumotlari yo\'q'"></p>
+                </div>
+            </div>
+        </section>
+
+        {{-- ══ O'QITUVCHILAR JADVALI ══ --}}
+        <section>
+            <div class="stats-card overflow-hidden">
+
+                {{-- Header --}}
+                <div class="px-6 py-4 flex flex-wrap items-center gap-3" style="border-bottom:1px solid rgba(195,198,215,.2)">
+                    <div class="flex items-center gap-2 flex-1 min-w-40">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(0,74,198,.1)">
+                            <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">table_chart</span>
+                        </div>
+                        <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Barcha o'qituvchilar</h4>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <select x-model="fd"
+                                class="rounded-lg px-3 py-1.5 text-xs outline-none cursor-pointer border-none"
+                                style="background:#eff4ff;color:#0b1c30">
+                            <option value="">Barcha yo'nalishlar</option>
+                            @foreach ($directionStats as $dir)
+                                <option value="{{ $dir->name }}">{{ $dir->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style="background:#eff4ff">
+                            <span class="material-symbols-outlined" style="font-size:16px;color:#434655">search</span>
+                            <input type="search" x-model="fs" placeholder="Qidirish..."
+                                class="bg-transparent border-0 outline-none text-xs w-32" style="color:#0b1c30">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Table --}}
+                <div class="overflow-x-auto">
+                    <table class="w-full" style="border-collapse:collapse">
+                        <thead>
+                            <tr style="background:#eff4ff;border-bottom:1px solid rgba(195,198,215,.2)">
+                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wide w-10" style="color:#434655">#</th>
+                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide" style="color:#434655">O'qituvchi</th>
+                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide hide-md" style="color:#434655">Yo'nalishlar</th>
+                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wide" style="color:#434655">Ball</th>
+                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wide hide-sm" style="color:#434655">Baholashlar</th>
+                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide" style="color:#434655">Topshiriqlar</th>
+                                <th class="px-4 py-3 w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(r,i) in filtered" :key="r.id">
+                                <tr class="trow" style="border-bottom:1px solid rgba(195,198,215,.1)"
+                                    onmouseover="this.style.background='rgba(239,244,255,.5)'"
+                                    onmouseout="this.style.background=''">
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="text-[11px] font-semibold" style="color:#434655" x-text="i+1"></span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[11px] font-bold"
+                                                 style="background:linear-gradient(135deg,#004ac6,#2563eb)"
+                                                 x-text="r.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()">
                                             </div>
-                                            <span class="text-[11px] font-semibold whitespace-nowrap"
-                                                :style="`color:${r.tPct===0?'#16A34A':r.tPct<=30?'#16A34A':r.tPct<=60?'#CA8A04':'#DC2626'}`"
-                                                x-text="`${r.tDn}/${r.tTot}`"></span>
+                                            <div>
+                                                <p class="text-[13px] font-semibold m-0" style="color:#0b1c30" x-text="r.name"></p>
+                                                <p class="text-[11px] m-0" style="color:#434655" x-text="r.dept"></p>
+                                            </div>
                                         </div>
-                                    </template>
-                                    <template x-if="r.tTot===0">
-                                        <span class="text-xs text-gray-400">—</span>
-                                    </template>
-                                </td>
-                                <td class="px-4 py-2.75">
-                                    <button @click="openModal(r.id)" title="Batafsil"
-                                        class="w-7.5 h-7.5 rounded-lg bg-indigo-50 text-blue-500 border-0 cursor-pointer flex items-center justify-center transition-colors duration-150"
-                                        onmouseover="this.style.background='#DBEAFE'"
-                                        onmouseout="this.style.background='#EEF2FF'">
-                                        <i class="fas fa-chart-simple text-xs"></i>
-                                    </button>
+                                    </td>
+                                    <td class="px-4 py-3 hide-md">
+                                        <span class="text-xs" style="color:#434655" x-text="r.dirs"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="sb"
+                                              :class="r.score >= 4.5 ? 'sb-g' : r.score >= 3.5 ? 'sb-a' : r.score > 0 ? 'sb-r' : 'sb-n'"
+                                              x-text="r.score>0?r.score.toFixed(1)+' ★':'—'"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-center hide-sm">
+                                        <span class="text-xs" style="color:#434655" x-text="r.cnt+' ta'"></span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <template x-if="r.tTot>0">
+                                            <div class="flex items-center gap-2 min-w-20">
+                                                <div class="tb flex-1">
+                                                    <div class="tf"
+                                                         :style="`width:${100-r.tPct}%;background:${r.tPct===0?'#006c49':r.tPct<=30?'#006c49':r.tPct<=60?'#784b00':'#ba1a1a'}`"></div>
+                                                </div>
+                                                <span class="text-[11px] font-semibold whitespace-nowrap"
+                                                      :style="`color:${r.tPct===0?'#006c49':r.tPct<=30?'#006c49':r.tPct<=60?'#784b00':'#ba1a1a'}`"
+                                                      x-text="`${r.tDn}/${r.tTot}`"></span>
+                                            </div>
+                                        </template>
+                                        <template x-if="r.tTot===0">
+                                            <span class="text-xs" style="color:#434655">—</span>
+                                        </template>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <button @click="openModal(r.id)" title="Batafsil"
+                                                class="w-7 h-7 rounded-lg border-0 cursor-pointer flex items-center justify-center transition-colors"
+                                                style="background:#eff4ff;color:#004ac6"
+                                                onmouseover="this.style.background='#e5eeff'"
+                                                onmouseout="this.style.background='#eff4ff'">
+                                            <span class="material-symbols-outlined" style="font-size:16px">analytics</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="filtered.length===0">
+                                <td colspan="7" class="p-10 text-center" style="color:#434655">
+                                    <span class="material-symbols-outlined block mb-2" style="font-size:36px;opacity:.25">info</span>
+                                    Ma'lumot topilmadi
                                 </td>
                             </tr>
-                        </template>
-                        <tr x-show="filtered.length===0">
-                            <td colspan="6" class="p-9 text-center text-gray-400">
-                                <i class="fas fa-circle-info text-[22px] opacity-30 block mb-1.5"></i>
-                                Ma'lumot topilmadi
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                        </tbody>
+                    </table>
+                </div>
 
-            {{-- Footer --}}
-            <div class="px-5.5 py-2.5 border-t border-gray-50 flex flex-wrap items-center justify-between gap-2">
-                <p class="text-[11px] text-gray-400 m-0">
-                    <span class="font-semibold text-gray-900" x-text="filtered.length"></span> ta o'qituvchi
-                    <span x-show="fs||fd" class="text-blue-500"> (filtrlangan)</span>
-                </p>
-                <div class="flex items-center gap-2.5 text-[10px] text-gray-500">
-                    <span class="flex items-center gap-0.75">
-                        <span class="w-1.75 h-1.75 rounded-full bg-emerald-500 inline-block"></span>A'lo ≥ 4.5
-                    </span>
-                    <span class="flex items-center gap-0.75">
-                        <span class="w-1.75 h-1.75 rounded-full bg-amber-400 inline-block"></span>Yaxshi ≥ 3.5
-                    </span>
-                    <span class="flex items-center gap-0.75">
-                        <span class="w-1.75 h-1.75 rounded-full bg-red-400 inline-block"></span>Qoniqarli
-                    </span>
+                {{-- Table footer --}}
+                <div class="px-6 py-3 flex flex-wrap items-center justify-between gap-2" style="border-top:1px solid rgba(195,198,215,.2)">
+                    <p class="text-[11px] m-0" style="color:#434655">
+                        <span class="font-semibold" style="color:#0b1c30" x-text="filtered.length"></span> ta o'qituvchi
+                        <span x-show="fs||fd" style="color:#004ac6"> (filtrlangan)</span>
+                    </p>
+                    <div class="flex items-center gap-3 text-[10px]" style="color:#434655">
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#006c49"></span>A'lo ≥ 4.5</span>
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#784b00"></span>Yaxshi ≥ 3.5</span>
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#ba1a1a"></span>Qoniqarli</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- ══════════════════════════════════════════════════════
-         MODAL — Batafsil ma'lumot
-         ══════════════════════════════════════════════════ --}}
-        <div x-show="modal" x-cloak @keydown.escape.window="modal=false" class="fixed inset-0 z-300 backdrop-blur-sm"
-            style="background:rgba(15,23,42,.5)">
-            <div class="flex items-center justify-center w-full h-full p-5" @click.self="modal=false">
-
-                <div class="bg-white rounded-2xl w-full max-w-xl max-h-[88vh] overflow-hidden flex flex-col"
-                    style="box-shadow:0 24px 60px rgba(15,23,42,.2)">
-
-                    {{-- Modal Header --}}
-                    <div class="px-5.5 pt-5 shrink-0">
-                        <div class="flex items-start justify-between gap-3 mb-3.5">
-                            <div>
-                                <h3 class="text-[15px] font-bold text-gray-900 m-0" x-text="modalTeacher"></h3>
-                                <p class="text-xs text-gray-400 mt-0.75 m-0">Batafsil ma'lumot</p>
-                            </div>
-                            <button @click="modal=false"
-                                class="shrink-0 w-7.5 h-7.5 rounded-lg bg-gray-100 border-0 cursor-pointer text-[15px] text-gray-500 flex items-center justify-center leading-none"
-                                onmouseover="this.style.background='#E5E7EB'"
-                                onmouseout="this.style.background='#F3F4F6'">✕</button>
-                        </div>
-
-                        {{-- Tabs --}}
-                        <div class="flex gap-0.5 border-b-2 border-gray-100">
-                            <button @click="modalTab='tasks'"
-                                :style="`padding:8px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;${modalTab==='tasks'?'color:#2563EB;border-bottom-color:#2563EB;':'color:#9CA3AF;'}`">
-                                <span class="mr-1.25">📋</span>
-                                Topshiriqlar
-                                <span
-                                    :style="`margin-left:5px;padding:1px 7px;border-radius:20px;font-size:10px;${modalTab==='tasks'?'background:#DBEAFE;color:#2563EB':'background:#F3F4F6;color:#9CA3AF'}`"
-                                    x-text="modalTasks.length"></span>
-                            </button>
-                            <button @click="modalTab='dirs'"
-                                :style="`padding:8px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;${modalTab==='dirs'?'color:#2563EB;border-bottom-color:#2563EB;':'color:#9CA3AF;'}`">
-                                <span class="mr-1.25">🎯</span>
-                                Yo'nalishlar bo'yicha ball
-                                <span
-                                    :style="`margin-left:5px;padding:1px 7px;border-radius:20px;font-size:10px;${modalTab==='dirs'?'background:#DBEAFE;color:#2563EB':'background:#F3F4F6;color:#9CA3AF'}`"
-                                    x-text="modalDirs.length"></span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- ── TAB: Topshiriqlar ──────────────────────────────── --}}
-                    <div x-show="modalTab==='tasks'" class="overflow-y-auto flex-1">
-
-                        {{-- Task summary bar --}}
-                        <div class="px-5.5 py-3 bg-neutral-50 border-b border-gray-100">
-                            <div class="flex items-center justify-between mb-1.75">
-                                <span class="text-[11px] text-gray-500">
-                                    Bajarilgan: <strong class="text-emerald-500"
-                                        x-text="modalTasks.filter(t=>t.status==='completed').length"></strong>
-                                    / <span x-text="modalTasks.length"></span> ta
-                                </span>
-                                <span class="text-[11px] font-bold text-gray-900"
-                                    x-text="modalTasks.length?Math.round(modalTasks.filter(t=>t.status==='completed').length/modalTasks.length*100)+'%':'0%'"></span>
-                            </div>
-                            <div class="h-1.25 rounded-full bg-red-100 overflow-hidden">
-                                <div class="h-full rounded-full transition-[width] duration-700 ease-out"
-                                    style="background:linear-gradient(90deg,#10B981,#34D399)"
-                                    :style="`width:${modalTasks.length?Math.round(modalTasks.filter(t=>t.status==='completed').length/modalTasks.length*100):0}%`">
-                                </div>
-                            </div>
-                        </div>
-
-                        <template x-for="(task,i) in modalTasks" :key="i">
-                            <div
-                                :style="`display:flex;align-items:flex-start;gap:12px;padding:13px 22px;${i<modalTasks.length-1?'border-bottom:1px solid #F9FAFB':''}`">
-                                <div
-                                    :style="`width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;background:${task.status==='completed'?'#DCFCE7':'#FEE2E2'}`">
-                                    <span x-text="task.status==='completed'?'✅':'⏳'"></span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-start justify-between gap-2 flex-wrap">
-                                        <p class="text-[13px] font-semibold text-gray-900 m-0 flex-1" x-text="task.title">
-                                        </p>
-                                        <span
-                                            :style="`font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;flex-shrink:0;${task.status==='completed'?'background:#DCFCE7;color:#16A34A':'background:#FEE2E2;color:#DC2626'}`"
-                                            x-text="task.status==='completed'?'Bajarilgan':'Kutilmoqda'"></span>
-                                    </div>
-                                    <div class="flex items-center gap-2.5 mt-1.25 flex-wrap">
-                                        <span x-show="task.done_at"
-                                            class="text-[11px] text-emerald-500 flex items-center gap-0.75">
-                                            <span>✓</span><span x-text="task.done_at"></span>
-                                        </span>
-                                        <span x-show="task.due && task.status!=='completed'"
-                                            class="text-[11px] text-amber-500 flex items-center gap-0.75">
-                                            <span>📅</span><span x-text="task.due"></span>
-                                        </span>
-                                        <span x-show="task.priority && task.priority!=='medium'"
-                                            :style="`font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;${task.priority==='high'?'background:#FEE2E2;color:#DC2626':task.priority==='urgent'?'background:#FEF3C7;color:#D97706':'background:#F3F4F6;color:#6B7280'}`"
-                                            x-text="task.priority==='high'?'🔴 Yuqori':task.priority==='urgent'?'🔥 Shoshilinch':'Oddiy'"></span>
-                                    </div>
-                                    <p x-show="task.note"
-                                        class="text-[11px] text-gray-400 mt-1.25 m-0 italic leading-snug"
-                                        x-text="'💬 '+task.note"></p>
-                                </div>
-                            </div>
-                        </template>
-                        <div x-show="modalTasks.length===0" class="p-12 text-center text-gray-400">
-                            <div class="text-[28px] mb-2 opacity-30">📋</div>
-                            <p class="text-[13px] m-0">Topshiriqlar tayinlanmagan</p>
-                        </div>
-                    </div>
-
-                    {{-- ── TAB: Yo'nalishlar bo'yicha ball ─────────────────── --}}
-                    <div x-show="modalTab==='dirs'" class="overflow-y-auto flex-1">
-
-                        {{-- Dir summary --}}
-                        <div class="px-5.5 py-3 bg-neutral-50 border-b border-gray-100">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[11px] text-gray-500">
-                                    Baholangan yo'nalishlar: <strong class="text-gray-700"
-                                        x-text="modalDirs.length"></strong> ta
-                                </span>
-                                <span class="text-[11px] font-bold text-gray-900"
-                                    x-text="modalDirs.length?(modalDirs.reduce((s,d)=>s+d.score,0)/modalDirs.length).toFixed(2)+' o\'rt.':'—'"></span>
-                            </div>
-                        </div>
-
-                        <template x-for="(dir,i) in modalDirs" :key="i">
-                            <div
-                                :style="`display:flex;align-items:center;gap:14px;padding:14px 22px;${i<modalDirs.length-1?'border-bottom:1px solid #F9FAFB':''}`">
-                                {{-- Rank --}}
-                                <div class="w-6.5 h-6.5 rounded-[7px] shrink-0 bg-indigo-50 flex items-center justify-center text-[11px] font-bold text-blue-500"
-                                    x-text="i+1"></div>
-                                {{-- Direction name --}}
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-[13px] font-semibold text-gray-900 m-0 truncate" x-text="dir.name"></p>
-                                    <p class="text-[11px] text-gray-400 mt-0.5 m-0" x-text="dir.count+' ta baholash'"></p>
-                                </div>
-                                {{-- Score + bar --}}
-                                <div class="shrink-0 text-right min-w-25">
-                                    <div class="flex items-center gap-2 justify-end">
-                                        <div class="w-17.5 h-1.25 rounded-full bg-slate-100 overflow-hidden">
-                                            <div
-                                                :style="`height:100%;border-radius:99px;width:${dir.score/5*100}%;background:${dir.score>=4.5?'#10B981':dir.score>=3.5?'#F59E0B':'#EF4444'};transition:width .6s ease`">
-                                            </div>
-                                        </div>
-                                        <span
-                                            :style="`font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:${dir.score>=4.5?'#16A34A':dir.score>=3.5?'#CA8A04':'#DC2626'}`"
-                                            x-text="dir.score.toFixed(2)"></span>
-                                    </div>
-                                    <div class="flex justify-end gap-px mt-1">
-                                        <template x-for="s in 5" :key="s">
-                                            <span
-                                                :style="`font-size:9px;color:${s<=Math.round(dir.score)?'#F59E0B':'#E5E7EB'}`">★</span>
-                                        </template>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        <div x-show="modalDirs.length===0" class="p-12 text-center text-gray-400">
-                            <div class="text-[28px] mb-2 opacity-30">🎯</div>
-                            <p class="text-[13px] m-0">Baholash ma'lumotlari yo'q</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>{{-- /flex centering wrapper --}}
-        </div>{{-- /teacher modal overlay --}}
-
-        {{-- ══════════════════════════════════════════════════════
-         DIRECTION MODAL — Yo'nalish bo'yicha o'qituvchilar
-         ══════════════════════════════════════════════════ --}}
-        <div x-show="dirModal" x-cloak @keydown.escape.window="dirModal=false"
-            class="fixed inset-0 z-400 backdrop-blur-sm" style="background:rgba(15,23,42,.5)">
-            <div class="flex items-center justify-center w-full h-full p-5" @click.self="dirModal=false">
-
-                <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
-                    style="box-shadow:0 24px 60px rgba(15,23,42,.2)">
-
-                    {{-- Header --}}
-                    <div class="px-5.5 py-4.5 border-b border-gray-100 flex items-start justify-between gap-3 shrink-0">
-                        <div>
-                            <div class="flex items-center gap-2 mb-0.5">
-                                <span
-                                    class="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-blue-500 text-[11px] shrink-0">
-                                    <i class="fas fa-sitemap"></i>
-                                </span>
-                                <h3 class="text-[15px] font-bold text-gray-900 m-0" x-text="dirModalName"></h3>
-                            </div>
-                            <p class="text-[11px] text-gray-400 m-0 ml-8">
-                                <span x-text="dirModalTeachers.length"></span> ta o'qituvchi baholangan
-                            </p>
-                        </div>
-                        <button @click="dirModal=false"
-                            class="shrink-0 w-7.5 h-7.5 rounded-lg bg-gray-100 border-0 cursor-pointer text-[15px] text-gray-500 flex items-center justify-center leading-none"
-                            onmouseover="this.style.background='#E5E7EB'"
-                            onmouseout="this.style.background='#F3F4F6'">✕</button>
-                    </div>
-
-                    {{-- Summary bar --}}
-                    <div class="px-5.5 py-3 bg-neutral-50 border-b border-gray-100 shrink-0">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-[11px] text-gray-500">Yo'nalish o'rtacha balli</span>
-                            <span class="text-[13px] font-extrabold tabular-nums"
-                                :style="`color:${dirModalScore>=4.5?'#16A34A':dirModalScore>=3.5?'#CA8A04':'#DC2626'}`"
-                                x-text="dirModalScore.toFixed(2)+' / 5.00'"></span>
-                        </div>
-                        <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                            <div class="h-full rounded-full transition-[width] duration-700 ease-out"
-                                :style="`width:${dirModalScore/5*100}%;background:${dirModalScore>=4.5?'#10B981':dirModalScore>=3.5?'#F59E0B':'#EF4444'}`">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Teachers list --}}
-                    <div class="overflow-y-auto flex-1">
-                        <template x-for="(t, i) in dirModalTeachers" :key="i">
-                            <div
-                                :style="`display:flex;align-items:center;gap:14px;padding:14px 22px;${i<dirModalTeachers.length-1?'border-bottom:1px solid #F9FAFB':''}`">
-                                {{-- Avatar --}}
-                                <div class="w-9 h-9 rounded-[10px] shrink-0 flex items-center justify-center text-white text-[12px] font-bold"
-                                    style="background:linear-gradient(135deg,#1E3A5F,#3B82F6)"
-                                    x-text="t.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()">
-                                </div>
-                                {{-- Name --}}
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-[13px] font-semibold text-gray-900 m-0 truncate" x-text="t.name"></p>
-                                    <p class="text-[11px] text-gray-400 m-0" x-text="t.cnt+' ta baholash'"></p>
-                                </div>
-                                {{-- Score + bar --}}
-                                <div class="shrink-0 text-right min-w-28">
-                                    <div class="flex items-center gap-2 justify-end mb-1">
-                                        <div class="w-16 h-1.25 rounded-full bg-slate-100 overflow-hidden">
-                                            <div
-                                                :style="`height:100%;border-radius:99px;width:${t.score/5*100}%;background:${t.score>=4.5?'#10B981':t.score>=3.5?'#F59E0B':'#EF4444'};transition:width .6s ease`">
-                                            </div>
-                                        </div>
-                                        <span class="text-[14px] font-extrabold tabular-nums"
-                                            :style="`color:${t.score>=4.5?'#16A34A':t.score>=3.5?'#CA8A04':'#DC2626'}`"
-                                            x-text="t.score.toFixed(2)"></span>
-                                    </div>
-                                    <div class="flex justify-end gap-px">
-                                        <template x-for="s in 5" :key="s">
-                                            <span
-                                                :style="`font-size:9px;color:${s<=Math.round(t.score)?'#F59E0B':'#E5E7EB'}`">★</span>
-                                        </template>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        <div x-show="dirModalTeachers.length===0" class="p-12 text-center text-gray-400">
-                            <i class="fas fa-users text-[28px] opacity-20 block mb-2"></i>
-                            <p class="text-[13px] m-0">Bu yo'nalishda hali baholash yo'q</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>{{-- /direction modal --}}
+        {{-- ══ MODALS ══ --}}
+        <x-public.teacher-modal />
+        <x-public.direction-modal />
 
     </div>
 @endsection

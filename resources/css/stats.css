@@ -1,4 +1,4 @@
-/* ── stats.css — Tailwind @apply only (plus raw CSS where @apply can't) ── */
+/* ── stats.css ── */
 @reference "tailwindcss";
 
 [x-cloak] {
@@ -13,13 +13,50 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: 'Inter', system-ui, sans-serif;
-    color: #111827;
+    color: #0b1c30;
 }
 
-/* Card */
+/* Material Symbols */
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+    line-height: 1;
+    display: inline-block;
+}
+
+/* KPI card */
+.kpi-card {
+    @apply flex flex-col p-5;
+    background: #fff;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(195, 198, 215, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.2s;
+}
+
+.kpi-card:hover {
+    border-color: rgba(0, 74, 198, 0.3);
+}
+
+/* Stats card (general panels) */
+.stats-card {
+    background: #fff;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(195, 198, 215, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+}
+
+/* Legacy card (kept for backward compat on other pages) */
 .card {
-    @apply bg-white rounded-[14px] border border-slate-100;
-    box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+    background: #fff;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(195, 198, 215, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+}
+
+/* Progress bar animation */
+.chart-bar-animate {
+    transition: width 1s ease-in-out;
 }
 
 /* Trend pills */
@@ -27,38 +64,19 @@ html, body {
     @apply inline-flex items-center gap-[3px] px-2 py-[2px] rounded-full text-[11px] font-semibold;
 }
 
-.tp-g {
-    @apply bg-green-100 text-green-600;
-}
-
-.tp-r {
-    @apply bg-red-100 text-red-600;
-}
-
-.tp-n {
-    @apply bg-slate-100 text-gray-500;
-}
+.tp-g { @apply bg-green-100 text-green-600; }
+.tp-r { @apply bg-red-100 text-red-600; }
+.tp-n { @apply bg-slate-100 text-gray-500; }
 
 /* Score badge */
 .sb {
     @apply inline-flex items-center justify-center rounded-lg text-xs font-bold px-[10px] py-[3px];
 }
 
-.sb-g {
-    @apply bg-green-100 text-green-600;
-}
-
-.sb-a {
-    @apply bg-yellow-100 text-yellow-600;
-}
-
-.sb-r {
-    @apply bg-red-100 text-red-600;
-}
-
-.sb-n {
-    @apply bg-slate-100 text-gray-400;
-}
+.sb-g { @apply bg-green-100 text-green-600; }
+.sb-a { @apply bg-yellow-100 text-yellow-600; }
+.sb-r { @apply bg-red-100 text-red-600; }
+.sb-n { @apply bg-slate-100 text-gray-400; }
 
 /* Chart wrapper */
 .cw {
@@ -67,26 +85,24 @@ html, body {
 
 /* Table row */
 .trow {
-    @apply border-b border-slate-50 transition-colors duration-100;
-}
-
-.trow:hover {
-    @apply bg-slate-50/80;
+    transition: background-color 0.1s;
 }
 
 /* Task mini-bar track */
 .tb {
-    @apply h-1.5 rounded-full bg-slate-100 overflow-hidden min-w-14;
+    @apply h-1.5 rounded-full overflow-hidden min-w-14;
+    background: #eff4ff;
 }
 
 /* Task mini-bar fill */
 .tf {
-    @apply h-full rounded-full transition-[width] duration-500 ease-out;
+    @apply h-full rounded-full;
+    transition: width 0.5s ease-out;
 }
 
 /* List dividers */
 .ldiv {
-    @apply border-b border-gray-100;
+    border-bottom: 1px solid rgba(195, 198, 215, 0.15);
 }
 
 /* Donut label */
@@ -94,15 +110,11 @@ html, body {
     @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none;
 }
 
-/* Responsive hide helpers — cannot use @apply for media queries */
+/* Responsive hide helpers */
 @media (max-width: 1023px) {
-    .hide-md {
-        display: none !important;
-    }
+    .hide-md { display: none !important; }
 }
 
 @media (max-width: 639px) {
-    .hide-sm {
-        display: none !important;
-    }
+    .hide-sm { display: none !important; }
 }

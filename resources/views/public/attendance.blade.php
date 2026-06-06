@@ -2,122 +2,166 @@
 
 @section('title', 'Davomat statistikasi — SMK Samarqand')
 
-{{-- ═══════ PAGE HEADER ═══════ --}}
-@section('page-header')
-    <div class="border-b border-slate-100" style="background:linear-gradient(135deg,#1E3A5F 0%,#1e4d8c 60%,#2563EB 100%)">
-        <div class="px-8 py-7 flex items-center justify-between flex-wrap gap-3">
-            <div>
-                <h1 class="text-[26px] font-extrabold text-white m-0 leading-tight">Davomat statistikasi</h1>
-                <p class="text-[13px] text-white/60 mt-1.5 m-0">O'qituvchilar davomati · oylik tahlil</p>
-            </div>
-            <div class="flex items-center gap-2 text-[12px] text-white/70 bg-white/10 px-3 py-1.5 rounded-full">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                Jonli ma'lumot
-            </div>
-        </div>
-    </div>
-@endsection
-
-{{-- ═══════ CONTENT ═══════ --}}
 @section('content')
 <div x-data="attApp()" x-init="init()" x-cloak>
 
-    {{-- ══════ Attendance card (full-width) ══════ --}}
-    <div class="card overflow-hidden">
-
-        {{-- Header --}}
-        <div class="px-5.5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
-            <div class="flex items-center gap-2">
-                <span class="w-7 h-7 rounded-[7px] bg-blue-100 flex items-center justify-center text-blue-600 text-[11px] shrink-0">
-                    <i class="fas fa-calendar-check"></i>
-                </span>
-                <div>
-                    <h2 class="text-[13px] font-bold text-gray-900 m-0">Davomat statistikasi</h2>
-                    <p class="text-[11px] text-gray-400 m-0" x-text="currentLabel"></p>
-                </div>
-            </div>
-            {{-- Oy filtri --}}
-            <div class="flex items-center gap-2 flex-wrap">
-                <select x-model="selectedMonth" @change="setMonth(selectedMonth)"
-                    class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-gray-700 outline-none cursor-pointer focus:border-blue-400 transition-colors">
-                    <template x-for="mk in monthKeys" :key="mk">
-                        <option :value="mk" x-text="allData[mk].label"></option>
-                    </template>
-                </select>
-                <div class="flex flex-wrap gap-2 text-[10px] text-gray-500 border-l border-gray-100 pl-2 ml-1">
-                    <span class="flex items-center gap-0.75"><span class="w-2 h-2 rounded-[2px] bg-emerald-500 inline-block"></span>O'z vaqtida</span>
-                    <span class="flex items-center gap-0.75"><span class="w-2 h-2 rounded-[2px] bg-amber-400 inline-block"></span>Kech</span>
-                    <span class="flex items-center gap-0.75"><span class="w-2 h-2 rounded-[2px] bg-blue-500 inline-block"></span>Uzrli</span>
-                    <span class="flex items-center gap-0.75"><span class="w-2 h-2 rounded-[2px] bg-red-500 inline-block"></span>Kelmagan</span>
-                </div>
+    {{-- ══ PAGE HEADER ══ --}}
+    <section class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+            <h2 class="text-[36px] font-bold leading-tight m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Davomat statistikasi</h2>
+            <p class="text-sm mt-1 m-0" style="color:#434655">O'qituvchilar davomati · oylik tahlil</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+            <select x-model="selectedMonth" @change="setMonth(selectedMonth)"
+                    class="rounded-lg px-3 py-2 text-xs font-semibold outline-none cursor-pointer border-none"
+                    style="background:#fff;color:#0b1c30;border:1px solid rgba(195,198,215,.4);box-shadow:0 1px 3px rgba(0,0,0,.05)"
+                    onfocus="this.style.boxShadow='0 0 0 2px rgba(0,74,198,.2)'"
+                    onblur="this.style.boxShadow='0 1px 3px rgba(0,0,0,.05)'">
+                <template x-for="mk in monthKeys" :key="mk">
+                    <option :value="mk" x-text="allData[mk].label"></option>
+                </template>
+            </select>
+            <div class="flex items-center gap-2 px-4 py-2 rounded-full border" style="background:#fff;border-color:rgba(195,198,215,.3);box-shadow:0 1px 3px rgba(0,0,0,.05)">
+                <span class="w-2 h-2 rounded-full animate-pulse inline-block" style="background:#006c49"></span>
+                <span class="text-xs" style="color:#434655" x-text="currentLabel"></span>
             </div>
         </div>
+    </section>
 
-        {{-- 4 summary stat boxes (Alpine reactive) --}}
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #F3F4F6">
-            <div class="px-5 py-3.5 border-r border-gray-100">
-                <p class="text-[11px] text-gray-500 m-0 mb-1.25">O'z vaqtida</p>
-                <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums" x-text="summary.on_time"></p>
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]" style="background:#DCFCE7;color:#16A34A"
-                    x-text="(summary.total > 0 ? Math.round(summary.on_time/summary.total*100) : 0)+'%'"></span>
+    {{-- ══ STATUS CARDS (border-l-4) ══ --}}
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+
+        {{-- O'z vaqtida (green) --}}
+        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #006c49">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(108,248,187,.2)">
+                    <span class="material-symbols-outlined" style="font-size:20px;color:#006c49">check_circle</span>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#dcfce7;color:#006c49"
+                      x-text="(summary.total > 0 ? Math.round(summary.on_time/summary.total*100) : 0)+'%'"></span>
             </div>
-            <div class="px-5 py-3.5 border-r border-gray-100">
-                <p class="text-[11px] text-gray-500 m-0 mb-1.25">Kech keldi</p>
-                <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums" x-text="summary.late"></p>
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]" style="background:#FEF9C3;color:#CA8A04"
-                    x-text="(summary.total > 0 ? Math.round(summary.late/summary.total*100) : 0)+'%'"></span>
-            </div>
-            <div class="px-5 py-3.5 border-r border-gray-100">
-                <p class="text-[11px] text-gray-500 m-0 mb-1.25">Uzrli sabab</p>
-                <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums" x-text="summary.excused"></p>
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]" style="background:#DBEAFE;color:#2563EB"
-                    x-text="(summary.total > 0 ? Math.round(summary.excused/summary.total*100) : 0)+'%'"></span>
-            </div>
-            <div class="px-5 py-3.5">
-                <p class="text-[11px] text-gray-500 m-0 mb-1.25">Kelmagan</p>
-                <p class="text-2xl font-extrabold text-gray-900 m-0 mb-1.25 leading-none tabular-nums" x-text="summary.absent"></p>
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-[20px]" style="background:#FEE2E2;color:#DC2626"
-                    x-text="(summary.total > 0 ? Math.round(summary.absent/summary.total*100) : 0)+'%'"></span>
-            </div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider m-0 mb-1" style="color:#434655">O'z vaqtida</p>
+            <h3 class="text-[40px] font-bold m-0 leading-none" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30"
+                x-text="summary.on_time"></h3>
+            <p class="text-[11px] mt-2 m-0" style="color:#434655">O'tgan oyga nisbatan yaxshi</p>
         </div>
 
-        {{-- Per-teacher attendance bars --}}
-        <div x-show="hasData" class="px-5.5 py-2">
-            <template x-for="(name, i) in (currentData?.labels ?? [])" :key="i">
-                <div class="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                    <p class="text-[12px] font-medium text-gray-700 m-0 shrink-0 truncate" style="width:150px" x-text="name"></p>
-                    <div class="flex-1 rounded-lg overflow-hidden flex" style="height:22px;background:#F1F5F9;min-width:80px">
-                        <template x-if="currentData.don[i] > 0">
-                            <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                :style="`flex:${currentData.don[i]};background:rgba(16,185,129,.9)`"
-                                x-text="currentData.don[i]"></div>
-                        </template>
-                        <template x-if="currentData.lan[i] > 0">
-                            <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                :style="`flex:${currentData.lan[i]};background:rgba(245,158,11,.9)`"
-                                x-text="currentData.lan[i]"></div>
-                        </template>
-                        <template x-if="currentData.exn[i] > 0">
-                            <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                :style="`flex:${currentData.exn[i]};background:rgba(59,130,246,.9)`"
-                                x-text="currentData.exn[i]"></div>
-                        </template>
-                        <template x-if="currentData.abn[i] > 0">
-                            <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
-                                :style="`flex:${currentData.abn[i]};background:rgba(239,68,68,.85)`"
-                                x-text="currentData.abn[i]"></div>
-                        </template>
+        {{-- Kech keldi (amber) --}}
+        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #784b00">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(255,221,184,.3)">
+                    <span class="material-symbols-outlined" style="font-size:20px;color:#784b00">schedule</span>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#fef3c7;color:#784b00"
+                      x-text="(summary.total > 0 ? Math.round(summary.late/summary.total*100) : 0)+'%'"></span>
+            </div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider m-0 mb-1" style="color:#434655">Kech keldi</p>
+            <h3 class="text-[40px] font-bold m-0 leading-none" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30"
+                x-text="summary.late"></h3>
+            <p class="text-[11px] mt-2 m-0" style="color:#434655">Asosan birinchi smenada</p>
+        </div>
+
+        {{-- Uzrli (blue) --}}
+        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #004ac6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(0,74,198,.1)">
+                    <span class="material-symbols-outlined" style="font-size:20px;color:#004ac6">info</span>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#dbeafe;color:#2563eb"
+                      x-text="(summary.total > 0 ? Math.round(summary.excused/summary.total*100) : 0)+'%'"></span>
+            </div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider m-0 mb-1" style="color:#434655">Uzrli sabab</p>
+            <h3 class="text-[40px] font-bold m-0 leading-none" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30"
+                x-text="summary.excused"></h3>
+            <p class="text-[11px] mt-2 m-0" style="color:#434655">Tibbiy ma'lumotnomalar bilan</p>
+        </div>
+
+        {{-- Kelmagan (red) --}}
+        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #ba1a1a">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(186,26,26,.1)">
+                    <span class="material-symbols-outlined" style="font-size:20px;color:#ba1a1a">cancel</span>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#fee2e2;color:#ba1a1a"
+                      x-text="(summary.total > 0 ? Math.round(summary.absent/summary.total*100) : 0)+'%'"></span>
+            </div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider m-0 mb-1" style="color:#434655">Kelmagan</p>
+            <h3 class="text-[40px] font-bold m-0 leading-none" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30"
+                x-text="summary.absent"></h3>
+            <p class="text-[11px] mt-2 m-0" style="color:#434655">Nazorat talab etiladi</p>
+        </div>
+
+    </section>
+
+    {{-- ══ PER-TEACHER BARS ══ --}}
+    <section>
+        <div class="stats-card overflow-hidden">
+
+            {{-- Header --}}
+            <div class="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style="border-bottom:1px solid rgba(195,198,215,.2)">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(0,74,198,.1)">
+                        <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">bar_chart</span>
                     </div>
-                    <span class="text-[11px] text-gray-400 shrink-0 tabular-nums min-w-12 text-right" x-text="currentData.tot[i]+' kun'"></span>
+                    <div>
+                        <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Shaxsiy ko'rsatkichlar</h4>
+                        <p class="text-[11px] m-0" style="color:#434655" x-text="currentLabel"></p>
+                    </div>
                 </div>
-            </template>
-        </div>
-        <div x-show="!hasData" class="p-8 text-center text-gray-400">
-            <i class="fas fa-calendar-xmark text-2xl opacity-25 block mb-2"></i>
-            <p class="text-xs m-0" x-text="''+currentLabel+' uchun davomat ma\'lumotlari yo\'q'"></p>
-        </div>
+                <div class="flex flex-wrap gap-3 text-[10px]" style="color:#434655">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm inline-block" style="background:#006c49"></span>O'z vaqtida</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm inline-block" style="background:#784b00"></span>Kech</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm inline-block" style="background:#004ac6"></span>Uzrli</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm inline-block" style="background:#ba1a1a"></span>Kelmagan</span>
+                </div>
+            </div>
 
-    </div>
+            {{-- Bars --}}
+            <div x-show="hasData" class="px-6 py-3">
+                <template x-for="(name, i) in (currentData?.labels ?? [])" :key="i">
+                    <div class="flex items-center gap-3 py-3 ldiv last:border-0">
+                        <div class="shrink-0" style="width:150px">
+                            <p class="text-[13px] font-semibold m-0 truncate" style="color:#0b1c30" x-text="name"></p>
+                            <p class="text-[10px] m-0" style="color:#434655" x-text="currentData.tot[i]+' kun'"></p>
+                        </div>
+                        <div class="flex-1 rounded-lg overflow-hidden flex" style="height:22px;background:#eff4ff;min-width:80px">
+                            <template x-if="currentData.don[i] > 0">
+                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                     :style="`flex:${currentData.don[i]};background:rgba(0,108,73,.9)`"
+                                     x-text="currentData.don[i]"></div>
+                            </template>
+                            <template x-if="currentData.lan[i] > 0">
+                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                     :style="`flex:${currentData.lan[i]};background:rgba(120,75,0,.9)`"
+                                     x-text="currentData.lan[i]"></div>
+                            </template>
+                            <template x-if="currentData.exn[i] > 0">
+                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                     :style="`flex:${currentData.exn[i]};background:rgba(0,74,198,.9)`"
+                                     x-text="currentData.exn[i]"></div>
+                            </template>
+                            <template x-if="currentData.abn[i] > 0">
+                                <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
+                                     :style="`flex:${currentData.abn[i]};background:rgba(186,26,26,.85)`"
+                                     x-text="currentData.abn[i]"></div>
+                            </template>
+                        </div>
+                        <div class="shrink-0 text-right" style="min-width:60px">
+                            <span class="text-[11px] font-semibold tabular-nums" style="color:#0b1c30"
+                                  x-text="(currentData.tot[i]>0?Math.round(currentData.don[i]/currentData.tot[i]*100):0)+'%'"></span>
+                            <p class="text-[10px] m-0" style="color:#434655">vaqtida</p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="!hasData" class="px-6 py-12 text-center" style="color:#434655">
+                <span class="material-symbols-outlined block mb-2" style="font-size:40px;opacity:.2">calendar_off</span>
+                <p class="text-sm m-0" x-text="''+currentLabel+' uchun davomat ma\'lumotlari yo\'q'"></p>
+            </div>
+
+        </div>
+    </section>
 
 </div>
 @endsection
