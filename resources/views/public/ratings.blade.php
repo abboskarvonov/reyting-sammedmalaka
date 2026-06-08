@@ -1,6 +1,6 @@
 @extends('layouts.stats')
 
-@section('title', "O'qituvchi reytingi — SMK Samarqand")
+@section('title', "O'qituvchi reytingi — RO'TFXMOUIM Samarqand filiali")
 
 @php
     /* Teacher chart */

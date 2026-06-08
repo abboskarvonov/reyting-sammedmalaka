@@ -1,6 +1,6 @@
 @extends('layouts.stats')
 
-@section('title', 'Davomat statistikasi — SMK Samarqand')
+@section('title', "Davomat statistikasi — RO'TFXMOUIM Samarqand filiali")
 
 @section('content')
 <div x-data="attApp()" x-cloak>

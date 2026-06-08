@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Statistika paneli — SMK Samarqand')</title>
+    <title>@yield('title', "Statistika portali — RO'TFXMOUIM Samarqand filiali")</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/css/stats.css', 'resources/js/stats.js', 'resources/js/app.js'])
@@ -24,7 +24,7 @@
                 <span class="material-symbols-outlined text-white" style="font-size:18px">school</span>
             </div>
             <div class="overflow-hidden" x-show="open">
-                <h1 class="text-base font-bold leading-tight m-0 whitespace-nowrap" style="font-family:'Hanken Grotesk',sans-serif;color:#004ac6">SMK Samarqand</h1>
+                <h1 class="text-sm font-bold leading-tight m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#004ac6;white-space:normal;line-height:1.25">RO'TFXMOUIM Samarqand filiali</h1>
                 <p class="text-[11px] m-0 mt-0.5 whitespace-nowrap" style="color:#434655;opacity:.7">Statistika portali</p>
             </div>
         </div>
@@ -138,9 +138,9 @@
                 <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:#004ac6">
                     <span class="material-symbols-outlined text-white" style="font-size:14px">school</span>
                 </div>
-                <p class="text-[13px] font-semibold m-0" style="color:rgba(255,255,255,.85)">SMK Samarqand</p>
+                <p class="text-[13px] font-semibold m-0" style="color:rgba(255,255,255,.85)">RO'TFXMOUIM Samarqand filiali</p>
             </div>
-            <p class="text-[11px] m-0" style="color:rgba(255,255,255,.35)">Xodimlarni baholash tizimi · © {{ date('Y') }} · Barcha huquqlar himoyalangan</p>
+            <p class="text-[11px] m-0 px-4" style="color:rgba(255,255,255,.35)">Respublika o'rta tibbiyot va farmaseft xodimlar malakasini oshirish va ularni ixtisoslashtirish markazi Samarqand filiali · © {{ date('Y') }}</p>
         </footer>
 
     </div>

@@ -1,6 +1,6 @@
 @extends('layouts.stats')
 
-@section('title', 'Topshiriqlar statistikasi — SMK Samarqand')
+@section('title', "Topshiriqlar statistikasi — RO'TFXMOUIM Samarqand filiali")
 
 @php
     $tkRows = $tkF->map(fn($t) => [
