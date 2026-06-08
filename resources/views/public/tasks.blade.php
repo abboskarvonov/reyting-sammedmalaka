@@ -37,6 +37,7 @@
             :value="$aTo"
             trend-label="Tayinlangan"
             :bar-pct="100"
+            border-color="#004ac6"
         />
 
         <x-public.kpi-card
@@ -48,6 +49,7 @@
             icon-color="#006c49"
             bar-color="#006c49"
             :bar-pct="$aPc"
+            border-color="#006c49"
         />
 
         <x-public.kpi-card
@@ -60,6 +62,7 @@
             icon-bg="rgba(0,74,198,.1)"
             bar-color="#004ac6"
             :bar-pct="$taskCompletionRate"
+            border-color="#784b00"
         />
 
     </section>

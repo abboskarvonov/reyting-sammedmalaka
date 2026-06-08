@@ -2,16 +2,17 @@
     'icon',
     'label',
     'value',
-    'suffix'     => '',
-    'trendLabel' => '',
-    'trendUp'    => true,
-    'barPct'     => 0,
-    'iconBg'     => 'rgba(0,74,198,.1)',
-    'iconColor'  => '#004ac6',
-    'barColor'   => '#004ac6',
+    'suffix'      => '',
+    'trendLabel'  => '',
+    'trendUp'     => true,
+    'barPct'      => 0,
+    'iconBg'      => 'rgba(0,74,198,.1)',
+    'iconColor'   => '#004ac6',
+    'barColor'    => '#004ac6',
+    'borderColor' => '',
 ])
 
-<div class="kpi-card">
+<div class="kpi-card" @if($borderColor) style="border-left:4px solid {{ $borderColor }}" @endif>
     <div class="flex justify-between items-start mb-4">
         <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
              style="background:{{ $iconBg }}">

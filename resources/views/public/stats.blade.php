@@ -197,6 +197,7 @@
                 :value="$totalTeachers"
                 trend-label="Faol"
                 :bar-pct="75"
+                border-color="#004ac6"
             />
 
             <x-public.kpi-card
@@ -208,6 +209,7 @@
                 icon-color="#006c49"
                 bar-color="#006c49"
                 :bar-pct="$avgR > 0 ? min(100, round($avgR / 5 * 100)) : 0"
+                border-color="#006c49"
             />
 
             <x-public.kpi-card
@@ -221,6 +223,7 @@
                 icon-color="#784b00"
                 bar-color="#784b00"
                 :bar-pct="$taskCompletionRate"
+                border-color="#784b00"
             />
 
             <x-public.kpi-card
@@ -230,18 +233,19 @@
                 suffix="%"
                 :trend-label="$onTimePct . '%'"
                 :bar-pct="$onTimePct"
+                border-color="#ba1a1a"
             />
 
         </section>
 
-        {{-- ══ MAIN DATA COLUMNS ══ --}}
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
+        {{-- ══ 3-COLUMN: TOP-5 + YO'NALISHLAR + TOPSHIRIQLAR ══ --}}
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
 
-            {{-- Teacher Ranking (7 cols) --}}
-            <div class="lg:col-span-7 stats-card p-6">
+            {{-- Top-5 Teacher Ranking --}}
+            <div class="stats-card p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="text-lg font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">
-                        O'qituvchilar reytingi (Top 5)
+                        Top 5 o'qituvchi
                     </h4>
                     <a href="{{ route('public.ratings') }}"
                        class="text-xs font-semibold flex items-center gap-1 no-underline"
@@ -271,7 +275,7 @@
                                         </div>
                                         <span class="text-sm font-semibold" style="color:#0b1c30">{{ $tch->user->name }}</span>
                                     </div>
-                                    <span class="text-xs font-bold" style="color:#004ac6">{{ number_format($sc, 1) }} ball</span>
+                                    <span class="text-xs font-bold" style="color:#004ac6">{{ number_format($sc, 1) }}</span>
                                 </div>
                                 <div class="h-2.5 w-full rounded-full overflow-hidden" style="background:#eff4ff">
                                     <div class="h-full rounded-full chart-bar-animate" style="background:#004ac6;width:{{ $barPct }}%"></div>
@@ -287,8 +291,8 @@
                 @endif
             </div>
 
-            {{-- Direction Stats (5 cols) --}}
-            <div class="lg:col-span-5 stats-card p-6">
+            {{-- Direction Stats --}}
+            <div class="stats-card p-6">
                 <h4 class="text-lg font-semibold m-0 mb-6" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">
                     Yo'nalishlar statistikasi
                 </h4>
@@ -334,64 +338,18 @@
                     </div>
                 @endif
 
-                {{-- Insight tip --}}
                 <div class="mt-6 p-4 rounded-xl border" style="background:rgba(0,74,198,.04);border-color:rgba(0,74,198,.1)">
                     <div class="flex gap-3">
                         <span class="material-symbols-outlined shrink-0" style="font-size:20px;color:#004ac6">lightbulb</span>
                         <p class="text-xs leading-relaxed m-0" style="color:#434655">
                             <span class="font-bold" style="color:#0b1c30">Tavsiya:</span>
-                            Past ko'rsatkichli yo'nalishlar uchun qo'shimcha monitoring va qo'llab-quvvatlash tavsiya etiladi.
+                            Past ko'rsatkichli yo'nalishlar uchun qo'shimcha monitoring tavsiya etiladi.
                         </p>
                     </div>
                 </div>
             </div>
 
-        </section>
-
-        {{-- ══ CHARTS ROW ══ --}}
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-
-            {{-- Teacher chart --}}
-            <div class="stats-card p-6">
-                <div class="flex items-start justify-between flex-wrap gap-2 mb-5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(0,74,198,.1)">
-                            <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">bar_chart</span>
-                        </div>
-                        <div>
-                            <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">O'qituvchilar reytingi</h4>
-                            <p class="text-[11px] mt-0.5 m-0" style="color:#434655">
-                                @if (count($tL))
-                                    <strong style="color:#0b1c30">{{ count($tL) }}</strong> ta o'qituvchi baholangan
-                                @else
-                                    Hali baholash ma'lumotlari yo'q
-                                @endif
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 text-[11px]" style="color:#434655">
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-sm inline-block" style="background:#006c49"></span>A'lo ≥ 4.5
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-sm inline-block" style="background:#784b00"></span>Yaxshi ≥ 3.5
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-sm inline-block" style="background:#ba1a1a"></span>Past
-                        </span>
-                    </div>
-                </div>
-                @if (count($tL) > 0)
-                    <div class="cw" id="twrap"><canvas id="tc"></canvas></div>
-                @else
-                    <div class="h-48 flex flex-col items-center justify-center" style="color:#434655">
-                        <span class="material-symbols-outlined mb-2" style="font-size:40px;opacity:.2">bar_chart</span>
-                        <p class="text-sm m-0">Hali baholash ma'lumotlari yo'q</p>
-                    </div>
-                @endif
-            </div>
-
-            {{-- Task: Donut + Per-teacher --}}
+            {{-- Task Status: Donut + Per-teacher --}}
             <div class="stats-card p-6 flex flex-col">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(108,248,187,.2)">
@@ -452,7 +410,7 @@
                             @endphp
                             <div class="flex items-center gap-2.5 py-2 {{ $tkIdx < count($tkF) - 1 ? 'ldiv' : '' }}">
                                 <p class="text-xs font-medium m-0 flex-1 min-w-0 truncate" style="color:#0b1c30">{{ $tkT->user->name }}</p>
-                                <div class="w-20 h-1.5 rounded-full overflow-hidden shrink-0" style="background:#eff4ff">
+                                <div class="w-16 h-1.5 rounded-full overflow-hidden shrink-0" style="background:#eff4ff">
                                     <div class="h-full rounded-full" style="background:{{ $tkBarCol }};width:{{ $tkPct }}%"></div>
                                 </div>
                                 <span class="text-[11px] shrink-0 min-w-8 text-right tabular-nums" style="color:#434655">
@@ -480,7 +438,7 @@
 
         {{-- ══ DAVOMAT ══ --}}
         <section class="mb-6">
-            <div class="stats-card overflow-hidden" x-data="attApp()" x-init="init()">
+            <div class="stats-card overflow-hidden" x-data="attApp()" x-cloak>
 
                 {{-- Header --}}
                 <div class="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style="border-bottom:1px solid rgba(195,198,215,.2)">
@@ -544,8 +502,8 @@
                 <div x-show="hasData" class="px-6 py-3">
                     <template x-for="(name, i) in (currentData?.labels ?? [])" :key="i">
                         <div class="flex items-center gap-3 py-2.5 ldiv last:border-0">
-                            <p class="text-xs font-medium m-0 shrink-0 truncate" style="width:150px;color:#0b1c30" x-text="name"></p>
-                            <div class="flex-1 rounded-lg overflow-hidden flex" style="height:20px;background:#eff4ff;min-width:80px">
+                            <p class="text-xs font-medium m-0 shrink-0 truncate" style="width:160px;color:#0b1c30" x-text="name"></p>
+                            <div class="flex-1 rounded-lg overflow-hidden flex" style="height:22px;background:#eff4ff;min-width:80px">
                                 <template x-if="currentData.don[i] > 0">
                                     <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
                                          :style="`flex:${currentData.don[i]};background:rgba(0,108,73,.9)`"
@@ -579,131 +537,6 @@
             </div>
         </section>
 
-        {{-- ══ O'QITUVCHILAR JADVALI ══ --}}
-        <section>
-            <div class="stats-card overflow-hidden">
-
-                {{-- Header --}}
-                <div class="px-6 py-4 flex flex-wrap items-center gap-3" style="border-bottom:1px solid rgba(195,198,215,.2)">
-                    <div class="flex items-center gap-2 flex-1 min-w-40">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(0,74,198,.1)">
-                            <span class="material-symbols-outlined" style="font-size:18px;color:#004ac6">table_chart</span>
-                        </div>
-                        <h4 class="text-[15px] font-semibold m-0" style="font-family:'Hanken Grotesk',sans-serif;color:#0b1c30">Barcha o'qituvchilar</h4>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <select x-model="fd"
-                                class="rounded-lg px-3 py-1.5 text-xs outline-none cursor-pointer border-none"
-                                style="background:#eff4ff;color:#0b1c30">
-                            <option value="">Barcha yo'nalishlar</option>
-                            @foreach ($directionStats as $dir)
-                                <option value="{{ $dir->name }}">{{ $dir->name }}</option>
-                            @endforeach
-                        </select>
-                        <div class="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style="background:#eff4ff">
-                            <span class="material-symbols-outlined" style="font-size:16px;color:#434655">search</span>
-                            <input type="search" x-model="fs" placeholder="Qidirish..."
-                                class="bg-transparent border-0 outline-none text-xs w-32" style="color:#0b1c30">
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Table --}}
-                <div class="overflow-x-auto">
-                    <table class="w-full" style="border-collapse:collapse">
-                        <thead>
-                            <tr style="background:#eff4ff;border-bottom:1px solid rgba(195,198,215,.2)">
-                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wide w-10" style="color:#434655">#</th>
-                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide" style="color:#434655">O'qituvchi</th>
-                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide hide-md" style="color:#434655">Yo'nalishlar</th>
-                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wide" style="color:#434655">Ball</th>
-                                <th class="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wide hide-sm" style="color:#434655">Baholashlar</th>
-                                <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide" style="color:#434655">Topshiriqlar</th>
-                                <th class="px-4 py-3 w-12"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(r,i) in filtered" :key="r.id">
-                                <tr class="trow" style="border-bottom:1px solid rgba(195,198,215,.1)"
-                                    onmouseover="this.style.background='rgba(239,244,255,.5)'"
-                                    onmouseout="this.style.background=''">
-                                    <td class="px-4 py-3 text-center">
-                                        <span class="text-[11px] font-semibold" style="color:#434655" x-text="i+1"></span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex items-center gap-2.5">
-                                            <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[11px] font-bold"
-                                                 style="background:linear-gradient(135deg,#004ac6,#2563eb)"
-                                                 x-text="r.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()">
-                                            </div>
-                                            <div>
-                                                <p class="text-[13px] font-semibold m-0" style="color:#0b1c30" x-text="r.name"></p>
-                                                <p class="text-[11px] m-0" style="color:#434655" x-text="r.dept"></p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 hide-md">
-                                        <span class="text-xs" style="color:#434655" x-text="r.dirs"></span>
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <span class="sb"
-                                              :class="r.score >= 4.5 ? 'sb-g' : r.score >= 3.5 ? 'sb-a' : r.score > 0 ? 'sb-r' : 'sb-n'"
-                                              x-text="r.score>0?r.score.toFixed(1)+' ★':'—'"></span>
-                                    </td>
-                                    <td class="px-4 py-3 text-center hide-sm">
-                                        <span class="text-xs" style="color:#434655" x-text="r.cnt+' ta'"></span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <template x-if="r.tTot>0">
-                                            <div class="flex items-center gap-2 min-w-20">
-                                                <div class="tb flex-1">
-                                                    <div class="tf"
-                                                         :style="`width:${100-r.tPct}%;background:${r.tPct===0?'#006c49':r.tPct<=30?'#006c49':r.tPct<=60?'#784b00':'#ba1a1a'}`"></div>
-                                                </div>
-                                                <span class="text-[11px] font-semibold whitespace-nowrap"
-                                                      :style="`color:${r.tPct===0?'#006c49':r.tPct<=30?'#006c49':r.tPct<=60?'#784b00':'#ba1a1a'}`"
-                                                      x-text="`${r.tDn}/${r.tTot}`"></span>
-                                            </div>
-                                        </template>
-                                        <template x-if="r.tTot===0">
-                                            <span class="text-xs" style="color:#434655">—</span>
-                                        </template>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <button @click="openModal(r.id)" title="Batafsil"
-                                                class="w-7 h-7 rounded-lg border-0 cursor-pointer flex items-center justify-center transition-colors"
-                                                style="background:#eff4ff;color:#004ac6"
-                                                onmouseover="this.style.background='#e5eeff'"
-                                                onmouseout="this.style.background='#eff4ff'">
-                                            <span class="material-symbols-outlined" style="font-size:16px">analytics</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </template>
-                            <tr x-show="filtered.length===0">
-                                <td colspan="7" class="p-10 text-center" style="color:#434655">
-                                    <span class="material-symbols-outlined block mb-2" style="font-size:36px;opacity:.25">info</span>
-                                    Ma'lumot topilmadi
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Table footer --}}
-                <div class="px-6 py-3 flex flex-wrap items-center justify-between gap-2" style="border-top:1px solid rgba(195,198,215,.2)">
-                    <p class="text-[11px] m-0" style="color:#434655">
-                        <span class="font-semibold" style="color:#0b1c30" x-text="filtered.length"></span> ta o'qituvchi
-                        <span x-show="fs||fd" style="color:#004ac6"> (filtrlangan)</span>
-                    </p>
-                    <div class="flex items-center gap-3 text-[10px]" style="color:#434655">
-                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#006c49"></span>A'lo ≥ 4.5</span>
-                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#784b00"></span>Yaxshi ≥ 3.5</span>
-                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#ba1a1a"></span>Qoniqarli</span>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         {{-- ══ MODALS ══ --}}
         <x-public.teacher-modal />

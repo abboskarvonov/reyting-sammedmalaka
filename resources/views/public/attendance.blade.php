@@ -3,7 +3,7 @@
 @section('title', 'Davomat statistikasi — SMK Samarqand')
 
 @section('content')
-<div x-data="attApp()" x-init="init()" x-cloak>
+<div x-data="attApp()" x-cloak>
 
     {{-- ══ PAGE HEADER ══ --}}
     <section class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -32,7 +32,7 @@
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
 
         {{-- O'z vaqtida (green) --}}
-        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #006c49">
+        <div class="kpi-card" style="border-left:4px solid #006c49">
             <div class="flex justify-between items-start mb-4">
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(108,248,187,.2)">
                     <span class="material-symbols-outlined" style="font-size:20px;color:#006c49">check_circle</span>
@@ -47,7 +47,7 @@
         </div>
 
         {{-- Kech keldi (amber) --}}
-        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #784b00">
+        <div class="kpi-card" style="border-left:4px solid #784b00">
             <div class="flex justify-between items-start mb-4">
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(255,221,184,.3)">
                     <span class="material-symbols-outlined" style="font-size:20px;color:#784b00">schedule</span>
@@ -62,7 +62,7 @@
         </div>
 
         {{-- Uzrli (blue) --}}
-        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #004ac6">
+        <div class="kpi-card" style="border-left:4px solid #004ac6">
             <div class="flex justify-between items-start mb-4">
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(0,74,198,.1)">
                     <span class="material-symbols-outlined" style="font-size:20px;color:#004ac6">info</span>
@@ -77,7 +77,7 @@
         </div>
 
         {{-- Kelmagan (red) --}}
-        <div class="kpi-card transition-transform hover:scale-[1.02]" style="border-left:4px solid #ba1a1a">
+        <div class="kpi-card" style="border-left:4px solid #ba1a1a">
             <div class="flex justify-between items-start mb-4">
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(186,26,26,.1)">
                     <span class="material-symbols-outlined" style="font-size:20px;color:#ba1a1a">cancel</span>
@@ -120,11 +120,11 @@
             <div x-show="hasData" class="px-6 py-3">
                 <template x-for="(name, i) in (currentData?.labels ?? [])" :key="i">
                     <div class="flex items-center gap-3 py-3 ldiv last:border-0">
-                        <div class="shrink-0" style="width:150px">
+                        <div class="shrink-0" style="width:180px">
                             <p class="text-[13px] font-semibold m-0 truncate" style="color:#0b1c30" x-text="name"></p>
                             <p class="text-[10px] m-0" style="color:#434655" x-text="currentData.tot[i]+' kun'"></p>
                         </div>
-                        <div class="flex-1 rounded-lg overflow-hidden flex" style="height:22px;background:#eff4ff;min-width:80px">
+                        <div class="flex-1 rounded-lg overflow-hidden flex" style="height:24px;background:#eff4ff;min-width:80px">
                             <template x-if="currentData.don[i] > 0">
                                 <div class="h-full flex items-center justify-center text-white text-[10px] font-bold leading-none"
                                      :style="`flex:${currentData.don[i]};background:rgba(0,108,73,.9)`"

@@ -21,6 +21,9 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    build: {
+        chunkSizeWarningLimit: 700,
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**'],

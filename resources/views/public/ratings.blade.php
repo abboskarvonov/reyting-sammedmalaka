@@ -105,6 +105,7 @@
             :value="$totalTeachers"
             trend-label="Faol"
             :bar-pct="75"
+            border-color="#004ac6"
         />
 
         <x-public.kpi-card
@@ -116,6 +117,7 @@
             icon-color="#006c49"
             bar-color="#006c49"
             :bar-pct="$avgR > 0 ? min(100, round($avgR / 5 * 100)) : 0"
+            border-color="#006c49"
         />
 
     </section>
