@@ -1,3 +1,7 @@
+/* ── Icon font FOUC fix: ikonlar faqat font tayyor bo'lganda ko'rinadi ── */
+document.fonts.ready.then(() => {
+    document.documentElement.classList.add('fonts-loaded');
+});
 
 /* ── Chart.js global defaults ──────────────────────────────────────── */
 if (typeof Chart !== 'undefined') {

@@ -4,9 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>@yield('title', "Statistika portali — RO'TFXMOUIM Samarqand filiali")</title>
+    <meta name="description" content="@yield('description', "RO'TFXMOUIM Samarqand filiali o'qituvchilar faoliyati statistikasi: reyting, davomat va topshiriqlar monitoringi.")">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    {{-- Open Graph --}}
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="@yield('title', "Statistika portali — RO'TFXMOUIM Samarqand filiali")">
+    <meta property="og:description" content="@yield('description', "RO'TFXMOUIM Samarqand filiali o'qituvchilar faoliyati statistikasi: reyting, davomat va topshiriqlar monitoringi.")">
+    <meta property="og:locale" content="uz_UZ">
+    <meta property="og:site_name" content="RO'TFXMOUIM Samarqand filiali">
+
+    {{-- Fonts: preconnect --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    {{-- Hanken Grotesk (text font) — swap OK --}}
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    {{-- Material Symbols (icon font) — block: ikonlar yuklanguncha yashirin, matn chiqmaydi --}}
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+
+    {{-- Ikonlar font yuklanguncha yashirin (FOUC oldini olish) --}}
+    <style>
+        .material-symbols-outlined { opacity: 0; }
+        .fonts-loaded .material-symbols-outlined { opacity: 1; transition: opacity .15s ease; }
+    </style>
+
     @vite(['resources/css/app.css', 'resources/css/stats.css', 'resources/js/stats.js', 'resources/js/app.js'])
 </head>
 
