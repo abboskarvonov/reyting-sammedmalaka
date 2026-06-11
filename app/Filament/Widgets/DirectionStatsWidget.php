@@ -59,6 +59,8 @@ class DirectionStatsWidget extends TableWidget
                     ->alignCenter(),
             ])
             ->paginated(false)
+            ->modelLabel("yo'nalish")
+            ->pluralModelLabel("yo'nalishlar")
             ->emptyStateHeading('Baholash ma\'lumotlari yo\'q')
             ->emptyStateDescription('Ushbu semestr uchun yo\'nalishlar hali baholanmagan')
             ->emptyStateIcon('heroicon-o-chart-bar');
