@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
 
         // 3. Asosiy ma'lumotlar
         $this->call([
+            AdminUserSeeder::class,
             GroupSeeder::class,
             SubjectSeeder::class,
             TeacherSeeder::class,
