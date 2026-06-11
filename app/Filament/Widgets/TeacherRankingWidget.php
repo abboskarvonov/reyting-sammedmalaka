@@ -61,6 +61,9 @@ class TeacherRankingWidget extends TableWidget
                     ->numeric()
                     ->alignCenter(),
             ])
-            ->paginated(false);
+            ->paginated(false)
+            ->emptyStateHeading('Baholash ma\'lumotlari yo\'q')
+            ->emptyStateDescription('Ushbu semestr uchun o\'qituvchilar hali baholanmagan')
+            ->emptyStateIcon('heroicon-o-academic-cap');
     }
 }

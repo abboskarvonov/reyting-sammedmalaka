@@ -63,6 +63,9 @@ class TaskStatsWidget extends TableWidget
                     })
                     ->alignCenter(),
             ])
-            ->paginated(false);
+            ->paginated(false)
+            ->emptyStateHeading('Topshiriqlar mavjud emas')
+            ->emptyStateDescription('Hali hech bir o\'qituvchiga topshiriq tayinlanmagan')
+            ->emptyStateIcon('heroicon-o-clipboard-document-list');
     }
 }

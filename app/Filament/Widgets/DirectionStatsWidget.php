@@ -58,6 +58,9 @@ class DirectionStatsWidget extends TableWidget
                     ->color('info')
                     ->alignCenter(),
             ])
-            ->paginated(false);
+            ->paginated(false)
+            ->emptyStateHeading('Baholash ma\'lumotlari yo\'q')
+            ->emptyStateDescription('Ushbu semestr uchun yo\'nalishlar hali baholanmagan')
+            ->emptyStateIcon('heroicon-o-chart-bar');
     }
 }
